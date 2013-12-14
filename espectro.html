@@ -8,7 +8,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="">
 
-    <title>Estudio de la Web audio API</title>
+    <title>Estudio de la Web audio API. Visualizando el sonido</title>
 
     <!-- Bootstrap core CSS -->
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
@@ -70,19 +70,10 @@
              
           </div>
           <div class="row">
-            <div class="col-8 col-sm-6 col-lg-8">
-              <h2>Descripción</h2>
-              <p> El Nodo Analizador, conectado en este ejemplo después del nodo de ganancia, nos permite visualizar el espectro de la señal. El método <code>getByteFrequencyData</code> copia los datos de frecuencia al array que le pasemos. En este caso un array de 512 valores enteros cuantificados con 8 Bits, la mitad del tamaño de nuestra resolución de la FFT (1024) y obtenido a partir del atributo del analizador <code>frequencyBinCount</code>. El cual nos devuelve una constante: el valor de la FFT/2. Cada muestra se almacena en un Byte (256 niveles). El piso es 0 = 0dB.</p>
-              <p>Una vez establecida la cadena de audio y su contexto, el código sería algo como esto:</p>
-              <div class="highlight">
-         
-            <pre class="prettyprint"><code class="language-js">
- var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
- misNodos.analizador.getByteFrequencyData(datos_frecuencia);</code></pre></div>
-            <p>Para graficar los valores de nuestra cadena de datos creamos una función de dibujo utilizando el elemento <code>&lt;canvas&gt;</code> que recorra este array de datos y los imprima en pantalla </p>
-            </div><!--/span-->
-            <div class="col-6 col-sm-6 col-lg-4">
-              <h2>Controles</h2>
+            <div class="col-12 col-sm-12 col-lg-12">
+            
+            <div class="col-4 col-sm-4 col-lg-4 pull-right" style="margin-bottom:12px">
+              <h4>Controles</h4>
                  <ul class="list-unstyled">      
             		 <li><strong>Volumen:</strong></li>
                		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valorvol">1</span></li>
@@ -97,6 +88,38 @@
   Ver Código fuente
 </button>
 </div><!--/span-->
+            
+            
+              <h4>Descripción</h4>
+              <p> El <a href="http://www.w3.org/TR/webaudio/#AnalyserNode" title="nodo analizador web audio api" target="_blank">Nodo Analizador</a> proporciona en tiempo real datos de la fuente de audio en el dominio del tiempo y en el de la frecuencia. Estos nodos no modifican el sonido y pueden ser colocados donde queramos en nuestra cadena de audio.</p>
+      
+              
+<p>Los resultados que muestra están basados en un análisis FFT de un tamaño de buffer determinado. Podemos agregar algunos atributos a este nodo para controlar el modo en que se comporta, por ejemplo:</p>
+<div class="well pull-left" style="margin-right:12px">
+<dl>           
+<dt>fftSize</dt>
+<dd>Define el tamaño del buffer que se usará para realizar el análisis. ha de ser potencia de 2. Valores altos aportan más resolución al procesado y tambien más consumo recursos. </dd>
+<dt>frequencyBinCount</dt>
+<dd>propiedad de lectura con el valor constante de fftSize/2.</dd>
+
+<dt>smoothingTimeConstant</dt>
+<dd>Es un valor entre 0 y 1. Contra más nos acercamos a 1 obtendremos un promediado más lento y una visualización mas suave. Valores cercanos a cero indican fluctuaciones de resultados rápidas.</dd>
+</dl>
+</div>              
+              
+<p>En este ejemplo conectamos el Nodo Analizador después de un Nodo de Ganancia, nos permite visualizar el espectro de la señal. El método <code>getByteFrequencyData</code> copia los datos de frecuencia al array que le pasemos. En este caso un array de 512 valores enteros cuantificados con 8 Bits, la mitad del tamaño de nuestra resolución de la FFT (1024) y obtenido a partir del atributo del analizador <code>frequencyBinCount</code>. El cual nos devuelve una constante: el valor de la FFT/2. Cada muestra se almacena en un Byte (256 niveles). El piso es 0 = 0dB.</p>
+              <p>Una vez establecida la cadena de audio y su contexto, el código sería algo como esto:</p>
+              <div class="highlight">
+         
+            <pre class="prettyprint"><code class="language-js">
+ var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+ misNodos.analizador.getByteFrequencyData(datos_frecuencia);</code></pre></div>
+            <p>Para graficar los valores de nuestra cadena de datos creamos una función de dibujo utilizando el elemento <code>&lt;canvas&gt;</code> que recorra este array de datos y los imprima en pantalla </p>
+           
+           
+           
+            </div><!--/spanTEXTO-->
+            
 <!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -169,20 +192,20 @@ if (suena) {
     comienzo = contextoDeAudio.currentTime;
     console.log('started at', startOffset);
     var source = contextoDeAudio.createBufferSource();
-     source.buffer = mibuffer;
-     source.loop = true;
-     source = cadenaDeAudio(source);
+    source.buffer = mibuffer;
+    source.loop = true;
+    source = cadenaDeAudio(source);
             
-            // se puede pasar tambien contextoDeAudio.currentTime
-      suena==true;
+    // se puede pasar tambien contextoDeAudio.currentTime
+    suena==true;
 	//source.noteOn(0);
-     source.start(0, startOffset % source.buffer.duration);  
+    source.start(0, startOffset % source.buffer.duration);  
 	 
-      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-      miFuente = source;
-     document.querySelector('#play').innerHTML= 'Pausar';
-	 var parrafo = document.getElementById("provisional");
-	 parrafo.parentNode.removeChild(parrafo);   
+    marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+    miFuente = source;
+    document.querySelector('#play').innerHTML= 'Pausar';
+	var parrafo = document.getElementById("provisional");
+	parrafo.parentNode.removeChild(parrafo);   
 
   }
   this.suena = !this.suena;
@@ -190,23 +213,23 @@ if (suena) {
 
  function cadenaDeAudio(source) {
 
-		    misNodos.volumen = contextoDeAudio.createGainNode();
-		    misNodos.analizador = contextoDeAudio.createAnalyser();
-			//Analizador
-			misNodos.analizador.smoothingTimeConstant = 0.3;
-			misNodos.analizador.fftSize=1024;
-			misNodos.analizador.minDecibels = -120;
-  			misNodos.analizador.maxDecibels = 0;
-			//ajustes de volumen
-			var volumen = document.querySelector('#volumen').value;
-			misNodos.volumen.gain.value = volumen;
-			
-			//Ruteo
-			source.connect(misNodos.volumen);
+    misNodos.volumen = contextoDeAudio.createGainNode();
+    misNodos.analizador = contextoDeAudio.createAnalyser();
+    //Analizador
+    misNodos.analizador.smoothingTimeConstant = 0.3;
+    misNodos.analizador.fftSize=1024;
+    misNodos.analizador.minDecibels = -120;
+    misNodos.analizador.maxDecibels = 0;
+    //ajustes de volumen
+    var volumen = document.querySelector('#volumen').value;
+    misNodos.volumen.gain.value = volumen;
+    
+    //Ruteo
+    source.connect(misNodos.volumen);
 
-			misNodos.volumen.connect(misNodos.analizador)
-						
-			misNodos.analizador.connect(contextoDeAudio.destination);
+    misNodos.volumen.connect(misNodos.analizador)
+                
+    misNodos.analizador.connect(contextoDeAudio.destination);
 			
 return source;			
 
@@ -214,24 +237,24 @@ return source;
 
 function dibujaEspectro(){
 		
-		ctxe.clearRect(0, 0, ancho, alto);
-		
-		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
-            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
-			
-			var NumerodeBarras = Math.round(ancho / resolucion);
-            for (var i = 0; i < NumerodeBarras; i++) {
-				//for (var i = 0; i < (datos_frecuencia.length); i++) {
-                var magnitud = datos_frecuencia[i];
-                // ajustamos las variables para dibujarlas en el canvas
-				//dibujamos tipo hue ;)
-				var hue = i/datos_frecuencia.length * 360
-				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
-            }
+  ctxe.clearRect(0, 0, ancho, alto);
+  
+  var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+      misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+      
+      var NumerodeBarras = Math.round(ancho / resolucion);
+      for (var i = 0; i < NumerodeBarras; i++) {
+          //for (var i = 0; i < (datos_frecuencia.length); i++) {
+          var magnitud = datos_frecuencia[i];
+          // ajustamos las variables para dibujarlas en el canvas
+          //dibujamos tipo hue ;) como B.Smus en su Wen Audio API de O'reilly
+          var hue = i/datos_frecuencia.length * 360
+          ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+          ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+      }
 	
 	}
-
+//Funciones para cambiar la resolución de la muestra. Básicamente hacen zoom sobre la banda baja
 function cambiaResolucion_mas(){
 		resolucion = resolucion*2;	
 		document.querySelector('#resolucion').innerHTML= resolucion;

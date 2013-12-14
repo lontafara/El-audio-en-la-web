@@ -8,7 +8,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="">
 
-    <title>Estudio de la Web audio API</title>
+    <title>Estudio de la Web audio API. Oscilador</title>
  <!-- Bootstrap core CSS -->
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
@@ -82,7 +82,7 @@
             		 <li><p><strong>Volumen:</strong></li>
                		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.01" value="0.2" />&nbsp;x &nbsp;<span id="valorvol">0,02</span></p></li>
             </ul>
-              <p><input id="osc" onclick="Boton(this)" type="button"  class="btn btn-default" value="Reproducir" /></p>
+              <p><input id="osc" onclick="Boton(this)" type="button"  class="btn btn-info" value="Reproducir" /></p>
             </div><!--/span-->
             <div class="col-6 col-sm-6 col-lg-4">
               <h4>Magnitudes</h4>
@@ -130,6 +130,9 @@
 	    }
             </code></pre>
            </div>   
+   
+ <p>  Con las variables <code>FRECUENCIA</code> y <code>ESCALA</code> ajustamos el valor de los potenciómetros o controles. A continuación creamos los nodos con sus parámetros básicos y los conectamos entre sí. De la fuente, que en este caso viene definida por nuestro nodo oscilador <code> misNodos.osc = contextoDeAudio.createOscillator()</code> al destino <code>contextoDeAudio.destination</code>. El nodo oscilador genera formas de onda periodicas. y cuenta con  algunos atributos, como la frecuencia <code>frequency</code> o el <code>detune</code>, ajuste fino de frecuencia en partes porcentuales.</p>
+   
    </div>
    <!-- Button trigger modal -->
 
@@ -194,29 +197,31 @@ function playOsc() {
 	    }
  
 visualizar = function() {
-var canvas = document.querySelector('#canvas');
-var ctd = canvas.getContext('2d');
-var ancho = document.getElementById('marco').offsetWidth -80;
-
-canvas.width= ancho;
-canvas.height= 256; 
+  var canvas = document.querySelector('#canvas');
+  var ctd = canvas.getContext('2d');
+  var ancho = document.getElementById('marco').offsetWidth -80;
+  
+  canvas.width= ancho;
+  canvas.height= 256; 
 
 
   var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
   misNodos.analizador.getByteTimeDomainData(muestras);
+  //array del tamaño del buffer: 512 muestras, la mitad del tamaño de nuestra resolución de la FFT (1024). 
+  
   //console.log(
   //muestras.length
   
   //)
   
-  var max=0;
-  for(var i = 0; i < muestras.length; i++){
+    var max=0;
+    for(var i = 0; i < muestras.length; i++){
 			max = muestras[i] > max ? muestras[i] : max;
 		}
 	//console.log(
       //"maximo:  "+max )
-	  max= max-128		
-  for (var i = 0; i < muestras.length; i++) {
+	max= max-128;		
+    for (var i = 0; i < muestras.length; i++) {
     var valor = muestras[i];
     var porcentaje = valor / 256;
 	
@@ -388,7 +393,7 @@ canvas.height= 256;
     var alto = canvas.height * porcentaje;
     var offset = canvas.height - alto;
     var trazo = canvas.width/muestras.length;
-    ctd.fillStyle = "#333";
+    ctd.fillStyle = "#fff";
     ctd.font="14px Helvetica";
 	ctd.fillRect(i * trazo, offset, 1, 1);
 	ctd.moveTo(0, 128);

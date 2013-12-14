@@ -8,7 +8,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="">
 
-    <title>Estudio de la Web audio API</title>
+    <title>Estudio de la Web audio API. Compresor Audio simple con Javascript</title>
 
     <!-- Bootstrap core CSS -->
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
@@ -98,7 +98,7 @@
            	</div> <!--/span-->
             
             <div class="col-6 col-sm-6 col-lg-4">
-              <h2>Controles</h2>
+              <h4>Controles</h4>
                <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
                  <ul class="list-unstyled">      
             		 <li><p><strong>Volumen:</strong></li>
@@ -165,12 +165,12 @@
          mibuffer = buffer;
     }
 
-
+	//Reproducir el sonido
     function playPause(){
     if (suena) {
         // Stop
-         var source = miFuente;
-             source.noteOff(0); 
+        var source = miFuente;
+        source.noteOff(0); 
         startOffset += contextoDeAudio.currentTime - this.comienzo;
         console.log('Pausado en', startOffset);
         // Grabar posición donde se pausó.
@@ -183,63 +183,63 @@
         comienzo = contextoDeAudio.currentTime;
         console.log('started at', startOffset);
         var source = contextoDeAudio.createBufferSource();
-         source.buffer = mibuffer;
-         source.loop = true;
-         source = cadenaDeAudio(source);
+        source.buffer = mibuffer;
+        source.loop = true;
+        source = cadenaDeAudio(source);
                 
-                // se puede pasar tambien contextoDeAudio.currentTime
-          suena==true;
+         // se puede pasar tambien contextoDeAudio.currentTime
+        suena==true;
         //source.noteOn(0);
-         source.start(0, startOffset % source.buffer.duration);  
+        source.start(0, startOffset % source.buffer.duration);  
          
-          marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-          miFuente = source;
-         document.querySelector('#play').innerHTML= 'Pausar';
-         var parrafo = document.getElementById("provisional");
-         parrafo.parentNode.removeChild(parrafo);   
+        marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+        miFuente = source;
+        document.querySelector('#play').innerHTML= 'Pausar';
+        var parrafo = document.getElementById("provisional");
+        parrafo.parentNode.removeChild(parrafo);   
     
       }
-      this.suena = !this.suena;
+        this.suena = !this.suena;
     }
 
  function cadenaDeAudio(source) {
 
-		    misNodos.panner = contextoDeAudio.createPanner();
-		    misNodos.volumen = contextoDeAudio.createGainNode();
-			misNodos.compresor = contextoDeAudio.createDynamicsCompressor();
-			//procesador para dibujar los indicadores de volumen
-			misNodos.procesador = contextoDeAudio.createScriptProcessor(1024,1,1);
-			misNodos.analizador = contextoDeAudio.createAnalyser();
-			//Analizador
-			misNodos.analizador.smoothingTimeConstant = 0.3;
-			misNodos.analizador.fftSize=1024;
-			misNodos.analizador.minDecibels = -120;
-  			misNodos.analizador.maxDecibels = 0;
-			// Ajustamos los valores del nodo a los del potenciómetro
+        misNodos.panner = contextoDeAudio.createPanner();
+        misNodos.volumen = contextoDeAudio.createGainNode();
+        misNodos.compresor = contextoDeAudio.createDynamicsCompressor();
+        //procesador para dibujar los indicadores de volumen
+        misNodos.procesador = contextoDeAudio.createScriptProcessor(1024,1,1);
+        misNodos.analizador = contextoDeAudio.createAnalyser();
+        //Analizador
+        misNodos.analizador.smoothingTimeConstant = 0.3;
+        misNodos.analizador.fftSize=1024;
+        misNodos.analizador.minDecibels = -120;
+        misNodos.analizador.maxDecibels = 0;
+        // Ajustamos los valores del nodo a los del potenciómetro
+        
             
-			    
-            //Volumen
-			var volumen = document.querySelector('#volumen').value;
-			misNodos.volumen.gain.value = volumen;
- 			// Compresor
-			var umbral = document.querySelector('#umbral').value;
-			var ratio = document.querySelector('#ratio').value;	
- 			misNodos.compresor.threshold.value = umbral;
-			misNodos.compresor.ratio.value= ratio;
-			
-			//Ruteo
-			source.connect(misNodos.volumen);
-            //misNodos.panner.connect(misNodos.procesador);
-			misNodos.volumen.connect(misNodos.compresor);
-			misNodos.compresor.connect(misNodos.procesador);
-			misNodos.compresor.connect(misNodos.analizador);
-			misNodos.procesador.connect(contextoDeAudio.destination);
-						
-			misNodos.analizador.connect(contextoDeAudio.destination);
-			
-			misNodos.compresor.connect(contextoDeAudio.destination);
-			
-			misNodos.procesador.onaudioprocess = function(e){
+        //Volumen
+        var volumen = document.querySelector('#volumen').value;
+        misNodos.volumen.gain.value = volumen;
+        // Compresor
+        var umbral = document.querySelector('#umbral').value;
+        var ratio = document.querySelector('#ratio').value;	
+        misNodos.compresor.threshold.value = umbral;
+        misNodos.compresor.ratio.value= ratio;
+        
+        //Ruteo
+        source.connect(misNodos.volumen);
+        //misNodos.panner.connect(misNodos.procesador);
+        misNodos.volumen.connect(misNodos.compresor);
+        misNodos.compresor.connect(misNodos.procesador);
+        misNodos.compresor.connect(misNodos.analizador);
+        misNodos.procesador.connect(contextoDeAudio.destination);
+                    
+        misNodos.analizador.connect(contextoDeAudio.destination);
+        
+        misNodos.compresor.connect(contextoDeAudio.destination);
+        
+        misNodos.procesador.onaudioprocess = function(e){
 			
 				
 				//Borramos el canvas 
@@ -250,17 +250,17 @@
 				//var intl = e.inputBuffer.getChannelData(0);// Devuelve un Floar 32 Array con los valores de la PCM entre -1 y 1
 				//ej. : valor  de muestra: 0.13016553223133087. Suleo (en dB) 20log(0.00000000000001/1)= -340.  Pero visualizamos sobre un piso de 72dB  72dB=0.  
 				// calculamos el pico cada 1024 muestras de la PCM del buffer
-			 var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
-			 misNodos.analizador.getByteTimeDomainData(muestras);
-			 //console.log(
-			 //muestras.length
-						  //)  
-              var max=0;
-              for(var i = 0; i < muestras.length; i++){
+			    var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+			    misNodos.analizador.getByteTimeDomainData(muestras);
+                //console.log(
+                //muestras.length
+                            //)  
+                 var max=0;
+                 for(var i = 0; i < muestras.length; i++){
                         max = muestras[i] > max ? muestras[i] : max;
                     }
-                //console.log(
-                  //"maximo:  "+max )
+                 //console.log(
+                   //"maximo:  "+max )
 				max= max-128
 				var dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
 				//Dibujamos en el canvas
@@ -292,25 +292,25 @@
 			
 return source;			
 
- }
+ } //Fin de la cadena de audio
 
 
 function dibujaEspectro(){
 		
-		ctxe.clearRect(0, 0, ancho, alto);
+		 ctxe.clearRect(0, 0, ancho, alto);
 		
-		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
-            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+		 var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+         misNodos.analizador.getByteFrequencyData(datos_frecuencia);
 			
-			var NumerodeBarras = Math.round(ancho / resolucion);
-            for (var i = 0; i < NumerodeBarras; i++) {
-				//for (var i = 0; i < (datos_frecuencia.length); i++) {
-                var magnitud = datos_frecuencia[i];
-                // ajustamos las variables para dibujarlas en el canvas
-				//dibujamos tipo hue ;)
-				var hue = i/datos_frecuencia.length * 360
-				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+		 var NumerodeBarras = Math.round(ancho / resolucion);
+         for (var i = 0; i < NumerodeBarras; i++) {
+			//for (var i = 0; i < (datos_frecuencia.length); i++) {
+               var magnitud = datos_frecuencia[i];
+               // ajustamos las variables para dibujarlas en el canvas
+			   //dibujamos tipo hue ;)
+			   var hue = i/datos_frecuencia.length * 360
+		       ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+               ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
             }
 	
 	}
@@ -381,7 +381,7 @@ function potenciometro(slider) {
   </div><!--row -->         
       <div class="row">
             <div class="col-12 col-sm-12 col-lg-12">        
-              <p>Para crear un <strong>nodo compresor de señal</strong> utilizamos la interfaz <code>createDynamicsCompressor</code> a la que podemos pasar los siguientes atributos para ajustar la dinámica de nuestra señal: </p>
+              <p>Para crear un <strong>nodo compresor de señal</strong> utilizamos la interfaz <code>createDynamicsCompressor</code> a la que podemos pasar los siguientes atributos para ajustar la dinámica de nuestra señal: </p> <div class="well pull-left" style="margin-right:12px">
               <dl> 
               <dt>threshold // en Decibelios</dt>
               <dd>Valor en decibelios sobre los que la compresión comienza a hacer efecto</dd>
@@ -396,7 +396,8 @@ function potenciometro(slider) {
                   <dt> release; // en segundos</dt>
                   <dd>Tiempo para incrementar la ganancia 10 dBs</dd>
               <dd></dd>
-              </dl>  
+              </dl>
+              </div><!-- WEll -->  
             </div><!--/span-->
             
            
