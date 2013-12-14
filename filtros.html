@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web Audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+ 
+  	<script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+  
+  <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onload="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Despilega el menú</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+           <a href="" class="navbar-brand">El audio en la web</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+        <h3 class="text-muted">Filtrado de la señal</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button>
+          </p>
+          <div class="jumbotron">
+             <div id="marco"><div id="provisional"></div><canvas id="espectro"></canvas></div>
+             
+          </div>
+          <div class="row">
+            <div class="col-6 col-sm-12 col-lg-4">
+              <p> La Web Audio API nos permite enrutar sonidos de nodo en nodo y crear canales de procesado complejos para nuestras cadenas de audio.</p>
+              <p>Una forma de crear un <strong>filtro paso bajo</strong> es a través de la función <code>BiquadFilterNode</code> entre la fuente de audio y la salida. Este nodo de audio contiene una variedad de filtros de audio que podemos utilizar para construir ecualizadores gráficos y otros procesadores de señal de audio,  señalando qué espectro de frecuencia amplificar o atenuar. </p>
+            </div><!--/span-->
+            
+           <div class="col-8 col-sm-6 col-lg-4"> 
+             <div class="bs-callout bs-callout-info">
+                     <h4>Filtro Paso Bajo:</h4>
+                     <ul class="list-unstyled ">   
+                     
+                     <li><input type="checkbox" id="c1"  onchange="activaFiltro(this);">
+<label for="c1"><span>Activa el filtro</span></label></li>
+                     <li><p><strong>Frecuencia de corte:</strong></li>
+                     <li><input id="lowpass" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.1" value="0.5"/>&nbsp;x &nbsp;<span id="valorlowpass">939.15</span>&nbsp;Hz</li>
+                      <li><p><strong>Factor de Calidad:</strong></li>
+                     <li>&nbsp;<strong>Q</strong> &nbsp;<input id="lowpassq" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.1" value="0.5" />&nbsp;x &nbsp;<span id="valorlowpassq">15</span></li>
+                     
+            		</ul>
+           			</div>
+              </div><!--/spanfiltros-->
+            <div class="col-6 col-sm-6 col-lg-4"> 
+              <h4>Controles</h4>
+               <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
+                 <ul class="list-unstyled">      
+            		 <li><p><strong>Volumen:</strong></li>
+               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valrvol">1</span></li>
+                     </ul>
+                	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
+            
+          <button class="btn btn-warning " data-toggle="modal" data-target="#myModal">
+  Ver Código fuente
+</button>
+            </div><!--/span-->
+          
+           
+</div><!--/row-->
+
+
+ <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">
+           <p>Entre los filtros más comunes que podemos utilizar están:</p>
+           <ul class=" list-unstyled">
+             <li><strong>Filtro paso bajo</strong></li>
+             <li><strong>Filtro paso alto</strong></li>
+            <li><strong> Filtro paso banda</strong></li>
+            <li><strong> Filtro de pico</strong></li>
+             </ul>
+           <p> Los filtros incluyen parámetros básicos para controlar la función de transferencia, podremos especificar una cierta cantidad de la ganancia, la frecuencia central, o de corte a la que debe aplicarse el filtro, y un factor de calidad. El filtro de paso bajo, por ejemplo, mantiene el rango de frecuencia más baja, pero descarta las frecuencias altas. El punto de corte está determinada por el valor de la frecuencia, y el factor Q  determina la forma de la gráfica. La ganancia sólo afecta a ciertos filtros, como a los filtros de pico y no a este filtro paso bajo.</p>
+           Para crear un filtro paso bajo y extraer las componentes de baja frecuencia de nuestra muestra de sonido, podríamos utilizar el siguiente código:</p>
+
+
+            <div class="highlight">
+         
+            <pre class="prettyprint"><code class="language-js">
+    // Creamos el filtro 
+    contextoDeAudio.createBiquadFilter(); 
+    // Conectamos nuestra fuente de audio al filtro, y éste a la salida 
+    fuenteDeAudio.connect(filtro); 
+    filtro.connect(contextoDeAudio.destination); 
+    // Podemos especificar algunos parámetros del paso bajo
+    filtro.type = 0; 
+    // Para el paso bajo. Revisa la especificación W3C de la Web Audio API  
+    filtro.frequency.value = 440; // establecemos el corte en 440 HZ  
+    //Reproducimos el sonido. 
+    fuenteDeAudio.start(0);
+            </code></pre>
+            
+            
+            </div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Filtro paso bajo</h4>
+      </div>
+      <div class="modal-body">
+        <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+
+	
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('started at', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+			//set de filtros
+			//misNodos.paso_alto = contextoDeAudio.createBiquadFilter();
+            //misNodos.paso_banda = contextoDeAudio.createBiquadFilter();
+            misNodos.paso_bajo = contextoDeAudio.createBiquadFilter();
+            //var highpass = document.querySelector('#highpass').value;
+            var lowpass = document.querySelector('#lowpass').value;
+			var lowpassq = document.querySelector('#lowpassq').value;
+            //var bandpass = document.querySelector('#bandpass').value;
+ 
+           // misNodos.paso_alto.type = 1; // highpass
+            //misNodos.paso_alto.frequency.value = highpass;
+			misNodos.paso_bajo.type = 0; // lowpass
+            misNodos.paso_bajo.frequency.value = lowpass;
+			//misNodos.paso_banda.type = 2; // bandpass 
+            //misNodos.paso_banda.frequency.value = bandpass;
+			
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+		    misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			//ajustes de volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+			//el filtro comienza desactivado
+			//misNodos.paso_bajo.connect(misNodos.volumen)
+			misNodos.volumen.connect(misNodos.analizador)
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+return source;			
+
+ }
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+                 if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+					document.querySelector('#varvol').innerHTML= frecuencia_corte;
+					}else if(slider.id =='lowpass'){
+			    // Movemos la frecuencia entre el mínimo valor (40 Hz) y la mitad de la frecuencia de muestreo.
+					  var porcentaje = slider.value;
+					  var minFrec = 40;
+					  var maxFrec = contextoDeAudio.sampleRate / 2;
+					  // Logaritmo (base 2) para calcular cuantas octavas caen en el rango.
+					  var numerodeOctavas = Math.log(maxFrec / minFrec) / Math.LN2;
+					  // Calculamos un multiplicador de 0 a 1 basado en una escala exponencial.
+					  var multiplicador = Math.pow(2, numerodeOctavas * (porcentaje - 1.0));
+					  // Multiplicador por la frecuencia máxima.
+					  misNodos.paso_bajo.frequency.value = maxFrec * multiplicador;	 
+					document.querySelector('#valorlowpass').innerHTML= (maxFrec * multiplicador).toFixed(2); 
+					}else if(slider.id =='lowpassq'){	
+						var factor = slider.value;
+						//Factor de calidad de 0 a 30
+					 	misNodos.paso_bajo.Q.value = factor;
+						document.querySelector('#valorlowpassq').innerHTML= Math.round(factor*30);
+						}
+						 						 
+}
+
+function activaFiltro(elemento){
+		
+  miFuente.disconnect(0);
+  misNodos.paso_bajo.disconnect(0);
+  // Verifica el check.
+  if (elemento.checked) {
+    // Conectar con filtro inicializado en 0.5.
+	document.querySelector('#lowpass').value = 0.5;
+	//var lowpass = document.querySelector('#lowpass').value;
+	document.querySelector('#valorlowpass').innerHTML= 939.15;
+	
+    misNodos.paso_bajo.frequency.value = 939.15;
+	var lowpassq = document.querySelector('#lowpassq').value*30;;
+	misNodos.paso_bajo.Q.value = lowpassq;
+    miFuente.connect(misNodos.paso_bajo);
+    misNodos.paso_bajo.connect(misNodos.volumen);
+	misNodos.volumen.connect(misNodos.analizador)			
+	misNodos.analizador.connect(contextoDeAudio.destination);
+	
+  } else {
+    // Conectar Directamente.
+    miFuente.connect(misNodos.volumen);
+	misNodos.volumen.connect(misNodos.analizador)			
+	misNodos.analizador.connect(contextoDeAudio.destination);
+  }
+	
+	
+	}
+
+
+                              </code></pre></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+        
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+               
+           
+           </div>
+           </div>
+        </div><!--/span-->
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+          <div class="list-group">
+            
+            <a href="comenzando.html" class="list-group-item">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="oscilador.html" class="list-group-item ">Oscilador</a>
+            <a href="espectro.html" class="list-group-item">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="#" class="list-group-item active">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script type="text/javascript">
+//Pulsa el botón reproducir!!
+var parrafo = document.createElement("h1");
+var contenido = document.createTextNode("Pulsa el botón reproducir");
+parrafo.appendChild(contenido);
+document.querySelector('#provisional').appendChild(parrafo);
+
+
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+
+	
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+	//Pulsa el botón reproducir!!
+	//Pulsa el botón reproducir!!
+pulsaElBotonReproducir();
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('started at', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+			//set de filtros
+			//misNodos.paso_alto = contextoDeAudio.createBiquadFilter();
+            //misNodos.paso_banda = contextoDeAudio.createBiquadFilter();
+            misNodos.paso_bajo = contextoDeAudio.createBiquadFilter();
+            //var highpass = document.querySelector('#highpass').value;
+            var lowpass = document.querySelector('#lowpass').value;
+			var lowpassq = document.querySelector('#lowpassq').value;
+            //var bandpass = document.querySelector('#bandpass').value;
+ 
+           // misNodos.paso_alto.type = 1; // highpass
+            //misNodos.paso_alto.frequency.value = highpass;
+			misNodos.paso_bajo.type = 0; // lowpass
+            misNodos.paso_bajo.frequency.value = lowpass;
+			//misNodos.paso_banda.type = 2; // bandpass 
+            //misNodos.paso_banda.frequency.value = bandpass;
+			
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+		    misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			//ajustes de volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+			//el filtro comienza desactivado
+			//misNodos.paso_bajo.connect(misNodos.volumen)
+			misNodos.volumen.connect(misNodos.analizador)
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+return source;			
+
+ }
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+                 if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+					document.querySelector('#varvol').innerHTML= frecuencia_corte;
+					}else if(slider.id =='lowpass'){
+			    // Movemos la frecuencia entre el mínimo valor (40 Hz) y la mitad de la frecuencia de muestreo.
+					  var porcentaje = slider.value;
+					  var minFrec = 40;
+					  var maxFrec = contextoDeAudio.sampleRate / 2;
+					  // Logaritmo (base 2) para calcular cuantas octavas caen en el rango.
+					  var numerodeOctavas = Math.log(maxFrec / minFrec) / Math.LN2;
+					  // Calculamos un multiplicador de 0 a 1 basado en una escala exponencial.
+					  var multiplicador = Math.pow(2, numerodeOctavas * (porcentaje - 1.0));
+					  // Multiplicador por la frecuencia máxima.
+					  misNodos.paso_bajo.frequency.value = maxFrec * multiplicador;	 
+					document.querySelector('#valorlowpass').innerHTML= (maxFrec * multiplicador).toFixed(2); 
+					}else if(slider.id =='lowpassq'){	
+						var factor = slider.value;
+						//Factor de calidad de 0 a 30
+					 	misNodos.paso_bajo.Q.value = factor;
+						document.querySelector('#valorlowpassq').innerHTML= Math.round(factor*30);
+						}
+						 						 
+}
+
+function activaFiltro(elemento){
+		
+  miFuente.disconnect(0);
+  misNodos.paso_bajo.disconnect(0);
+  // Verifica el check.
+  if (elemento.checked) {
+    // Conectar con filtro inicializado en 0.5.
+	document.querySelector('#lowpass').value = 0.5;
+	//var lowpass = document.querySelector('#lowpass').value;
+	document.querySelector('#valorlowpass').innerHTML= 939.15;
+	
+    misNodos.paso_bajo.frequency.value = 939.15;
+	var lowpassq = document.querySelector('#lowpassq').value*30;;
+	misNodos.paso_bajo.Q.value = lowpassq;
+    miFuente.connect(misNodos.paso_bajo);
+    misNodos.paso_bajo.connect(misNodos.volumen);
+	misNodos.volumen.connect(misNodos.analizador)			
+	misNodos.analizador.connect(contextoDeAudio.destination);
+	
+  } else {
+    // Conectar Directamente.
+    miFuente.connect(misNodos.volumen);
+	misNodos.volumen.connect(misNodos.analizador)			
+	misNodos.analizador.connect(contextoDeAudio.destination);
+  }
+	
+	
+	}
+
+function pulsaElBotonReproducir(){
+		var provisional = document.createElement('div');
+		provisional.setAttribute('id', 'provisional');
+		var parrafo = document.createElement("h1");
+		var contenido = document.createTextNode("Pulsa el botón reproducir");
+		provisional.appendChild(parrafo);
+		parrafo.appendChild(contenido);
+		var espectro = document.getElementById('espectro');
+		var papa = espectro.parentNode;
+		papa.insertBefore( provisional, espectro);
+		document.querySelector('#provisional').appendChild(parrafo);
+}
+	
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+   
+   
+  </body>
+</html>

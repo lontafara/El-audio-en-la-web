@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+     <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+   <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onLoad="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Cambia la navegación</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+           <a href="" class="navbar-brand">El audio en la web</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+        <h3 class="text-muted">Comenzando con la web audio API</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Cambiar navegación</button>
+          </p>
+          
+          <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">
+              <h2>El contexto de audio</h2>
+               <p> La Web Audio API es una Interfaz de programación avanzada de JavaScript de alto nivel para el procesamiento y síntesis de audio en aplicaciones web. El objetivo de esta API es incluir las funcionalidades y capacidades que encontramos en los motores de las modernas aplicaciones web de escritorio en un entorno web, para realizar tareas de mezcla, procesamiento y filtrado de señal en nuestro navegador. </p>
+              <p>La Web Audio API está disponible actualmente para los navegadores Chrome y Safari, y es accesible para los desarrolladores a través de Javascript. En estos navegadores, el contexto de audio se crea con el prefijo <code>webkit</code>. Mozilla ha publicado que están implementando la Web audio API en Firefox, y pronto estará disponible para la mayoría de navegadores.</p>
+              <p>En todo caso, podemos inicializar nuestro contexto de audio atendiendo al navegador con que se ejecute la aplicación con el siguiente código:</p>
+              <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+    var contextoDeAudio = (window.AudioContext || 
+    window.webkitAudioContext || 
+    window.mozAudioContext ||
+    window.oAudioContext || 
+    window.msAudioContext);
+    if (contextoDeAudio) {
+       // La Web Audio API está diponible. 
+    } else {
+       // La web audio api no está disponible
+       }
+            </code></pre>
+           </div>   
+            
+       <p>Cada contexto de audio puede soportar múltiples entradas y salidas, así como un enrutamiento complejo de la señal, por lo que generalmente necesitaremos sólo un contexto de audio para cada aplicación.</p>
+       <p>La instancia del contexto de audio incluye métodos para crear nodos de audio, o puntos de procesado de señal, que podremos interconectar para trabajar la señal de audio.</p>   
+       <p style="text-align:center">
+       <img src="imagenes/fuente-destino.jpg" class="img-thumbnail img-responsive" alt="Fuente- destino" />
+       </p>
+       <p>Pulsa este botón para <button onClick="comprobar();" class="btn btn-default">comprobar</button> si tu navegador soporta la Web Audio API</p>  
+           <p> Para producir un sonido con la  Web audio API, crearemos una o más fuentes de audio y las conectaremos al destino o salida proporcionada por la instancia AudioContext. Esta conexión no tiene que ser directa, y puede ir a través de cualquier número de <code>AudioNodes</code> o etapas de procesado intermedias que actuarán como módulos de procesamiento para la señal de audio. Este enrutamiento se describe en mayor detalle en la <a href="http://www.w3.org/TR/webaudio/" target="_blank">especificación de la Web Audio API.</a> 
+            
+           <h2>Los nodos de audio</h2>        
+<p>Uno de los usos más extendidos en el contexto de audio es crear nodos de audio, o etapas de procesado.</p>
+<p>Podemos diferenciar varios tipos</p>
+      <dl class="nav nav-pills ">
+      <dt>Nodos de fuente</dt>
+      <dd>Fuentes de audio como audio buffers, entradas de micrófono, etiquetas de audio, osciladores, y procesadores de Javascript</dd>
+      
+      
+      <dt>Nodos de modificación</dt>
+      <dd>Filtros, panners, compresores, etc.</dd>
+      <dt>Nodos de análisis</dt>
+      <dd>Analizadores y procesadores de Javascript</dd>
+      <dt>Nodos de destino</dt>
+      <dd>Salida de audio y buffers de procesado offline</dd>
+      </dl>      
+ 	  
+  <p>En la imagen puede observarse el ruteo de señal del ejemplo del compresor</p> 
+     <p style="text-align:center">
+      <img src="imagenes/fuente-compresor.jpg" alt="compresor web audio API" class="img-thumbnail img-responsive"/>
+      </p>
+      </div><!--/span-->         
+      
+          </div><!--/row-->
+        </div><!--/span-->
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas affix" id="sidebar" role="navigation" >
+          <div class="list-group">
+            
+            <a href="#" class="list-group-item active">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="oscilador.html" class="list-group-item">Oscilador</a>
+            <a href="espectro.html" class="list-group-item ">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script>
+
+function comprobar(){
+	 var contextClass = (window.AudioContext || 
+    window.webkitAudioContext || 
+    window.mozAudioContext ||
+    window.oAudioContext || 
+    window.msAudioContext);
+    if (contextClass) {
+       alert(' La Web Audio API está diponible!'); 
+
+    } else {
+        alert( 'La Web Audio API  no está diponible.'); 
+       }
+	
+	
+	}
+
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+    <script src="bootstrap/js/affix.js"></script>
+  </body>
+</html>

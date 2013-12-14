@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+ <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+     <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+   <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onLoad="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Cambia la navegación</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">PFC. Web Audio API</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+        <h3 class="text-muted">Oscilador simple</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Cambiar navegación</button>
+          </p>
+          <div class="jumbotron" id="marco">
+            <div id="marco"><div id="provisional"><h1>Pulsa el botón reproducir</h1></div><canvas id="canvas"></canvas></div>
+          </div>
+          <div class="row">
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h4>Descripción</h4>
+              <p> El método <code>getByteTimeDomainData</code> copia los datos de la forma de onda al array que le pasemos. En este caso un array  del tamaño del buffer: 512 muestras, la mitad del tamaño de nuestra resolución de la FFT (1024). Cada muestra se almacena en un Byte (256 niveles). El piso es 128 = 0dB.</p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h4>Controles</h4>
+                 <ul class="list-unstyled">      
+            		
+             		<li><p><strong>Frecuencia:</strong></li>
+            		<li> <input id="freq" onchange="potenciometro(this)" type="range" min="60" max="8000" step="1" value="440" /> &nbsp;<span id="valorfreq">440</span> &nbsp;Hz</p></li>
+            		 <li><p><strong>Volumen:</strong></li>
+               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.01" value="0.2" />&nbsp;x &nbsp;<span id="valorvol">0,02</span></p></li>
+            </ul>
+              <p><input id="osc" onclick="Boton(this)" type="button"  class="btn btn-default" value="Reproducir" /></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h4>Magnitudes</h4>
+                <ul class="list-unstyled">      
+                        
+                	<li>Amplitud de la  muestra:  &nbsp;<span id="maximo">0</span></li>
+                	<li>El valor atual en decibelos es:  &nbsp;<span id="dB">0</span> &nbsp;dB</li>
+                	<li>Al aplicar el factor de ganancia de 0.5 obtenemos -6dB</li>
+                	<li>20log<sub>10</sub>(0,5) =  &nbsp;<span id="dBs"></span> &nbsp;dB</li></ul>            
+             
+             	<button class="btn btn-warning " data-toggle="modal" data-target="#myModal">Ver Código fuente</button>
+
+             </div><!--/span-->
+           
+          </div><!--/row-->
+          
+      <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">    
+          
+           <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+    function playOsc() {
+    	// Los controles son variables de los nodos
+	    var FREQUENCIA = document.querySelector('#freq').value;
+        var ESCALA = document.querySelector('#volumen').value
+		
+        // Creamos los nodos
+        misNodos.osc = contextoDeAudio.createOscillator();
+        misNodos.osc.frequency.value = FREQUENCIA;
+        misNodos.ganancia = contextoDeAudio.createGain();
+        misNodos.ganancia.gain.value = ESCALA;
+        
+        //Los datos del nodo analizador nos sirven para dibujar en pantalla
+        misNodos.analizador= contextoDeAudio.createAnalyser();
+        misNodos.analizador.fftSize = 1024;
+		
+        //conectar
+        misNodos.osc.connect(misNodos.ganancia);
+        misNodos.ganancia.connect(misNodos.analizador);
+        misNodos.analizador.connect(contextoDeAudio.destination);
+		
+        // comenzar ya.
+        misNodos.osc.start(0);
+	   requestAnimationFrame(visualizar.bind(this));
+	    }
+            </code></pre>
+           </div>   
+   </div>
+   <!-- Button trigger modal -->
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Oscilador</h4>
+      </div>
+      <div class="modal-body">
+        <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+               
+
+var miFuente, misNodos = {}, espectro, max=0,imprimedBL,imprimedBR;
+var suena = false;	
+var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+// variables de dibujo
+
+
+ function Boton(button) {
+            if(!suena) {
+                playOsc();
+                button.value = "Parar Sonido";
+                suena = true;
+            }
+            else {
+                misNodos.osc.stop(0);
+                button.value = "Reproducir";
+                suena = false;
+            }
+        }		
+
+
+
+
+function playOsc() {
+	    var FREQUENCIA = document.querySelector('#freq').value;
+        var ESCALA = document.querySelector('#volumen').value
+		
+		misNodos.osc = contextoDeAudio.createOscillator();
+        misNodos.osc.frequency.value = FREQUENCIA;
+        misNodos.ganancia = contextoDeAudio.createGain();
+        misNodos.ganancia.gain.value = ESCALA;
+		misNodos.analizador= contextoDeAudio.createAnalyser();				
+		misNodos.analizador.fftSize = 1024;
+		//conectar
+		
+		misNodos.osc.connect(misNodos.ganancia);
+		misNodos.ganancia.connect(misNodos.analizador);
+		misNodos.analizador.connect(contextoDeAudio.destination);
+		// comenzar ya.
+		misNodos.osc.start(0);
+            //espectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+       		// reproducir ahora (0 segundos desde ahora)
+	   requestAnimationFrame(visualizar.bind(this));
+	   //Borrar texto
+	   var parrafo = document.getElementById("provisional");
+		 parrafo.parentNode.removeChild(parrafo);
+	    }
+ 
+visualizar = function() {
+var canvas = document.querySelector('#canvas');
+var ctd = canvas.getContext('2d');
+var ancho = document.getElementById('marco').offsetWidth -80;
+
+canvas.width= ancho;
+canvas.height= 256; 
+
+
+  var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+  misNodos.analizador.getByteTimeDomainData(muestras);
+  //console.log(
+  //muestras.length
+  
+  //)
+  
+  var max=0;
+  for(var i = 0; i < muestras.length; i++){
+			max = muestras[i] > max ? muestras[i] : max;
+		}
+	//console.log(
+      //"maximo:  "+max )
+	  max= max-128		
+  for (var i = 0; i < muestras.length; i++) {
+    var valor = muestras[i];
+    var porcentaje = valor / 256;
+	
+    var alto = canvas.height * porcentaje;
+    var offset = canvas.height - alto;
+    var trazo = canvas.width/muestras.length;
+    ctd.fillStyle = "#333";
+    ctd.font="14px Helvetica";
+	ctd.fillRect(i * trazo, offset, 1, 1);
+	ctd.moveTo(0, 128);
+	ctd.lineTo(ancho, 128);
+	ctd.stroke();
+	
+  	ctd.fillText ('0', 5, 128)
+	
+	//dibujamaximo(ctd,max);
+	document.querySelector('#maximo').innerHTML = max;
+	dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+	document.querySelector('#dB').innerHTML = dB;
+	dBs=20*Math.log(0.5)/Math.LN10;
+	document.querySelector('#dBs').innerHTML = dBs;
+  }
+  requestAnimationFrame(visualizar.bind(this));
+};      
+
+function dibujamaximo(c,m){       
+c.beginPath();
+c.moveTo(0, 128+m);
+c.lineTo(20, 128+m);
+var a= 128+m;
+c.fillStyle = "rgb(25,255,0)";
+c.fillText (m, 5, a);
+c.stroke();
+	}
+
+function potenciometro(slider) {
+            if(contextoDeAudio.activeSourceCount > 0) {
+                if(slider.id == 'freq') {
+                    var FREQ = slider.value;
+                    misNodos.osc.frequency.value = FREQ;
+				document.querySelector('#valorfreq').innerHTML = FREQ;
+                }
+                else if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.ganancia.gain.value = volumen;
+					document.querySelector('#valorvol').innerHTML = volumen;
+                }
+            }
+        }
+
+
+
+
+
+
+               
+               
+               </code></pre></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+        
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+   
+   </div><!-- Segunda fila-->       
+          
+        </div><!--/span-->
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+          <div class="list-group">
+            
+            <a href="comenzando.html" class="list-group-item">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="#" class="list-group-item active">Oscilador</a>
+            <a href="espectro.html" class="list-group-item ">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script type="text/javascript">
+
+var miFuente, misNodos = {}, espectro, max=0,imprimedBL,imprimedBR;
+var suena = false;	
+var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+// variables de dibujo
+
+
+ function Boton(button) {
+            if(!suena) {
+                playOsc();
+                button.value = "Parar Sonido";
+                suena = true;
+            }
+            else {
+                misNodos.osc.stop(0);
+                button.value = "Reproducir";
+                suena = false;
+            }
+        }		
+
+
+
+
+function playOsc() {
+	    var FREQUENCIA = document.querySelector('#freq').value;
+        var ESCALA = document.querySelector('#volumen').value
+		
+		misNodos.osc = contextoDeAudio.createOscillator();
+        misNodos.osc.frequency.value = FREQUENCIA;
+        misNodos.ganancia = contextoDeAudio.createGain();
+        misNodos.ganancia.gain.value = ESCALA;
+		misNodos.analizador= contextoDeAudio.createAnalyser();				
+		misNodos.analizador.fftSize = 1024;
+		//conectar
+		
+		misNodos.osc.connect(misNodos.ganancia);
+		misNodos.ganancia.connect(misNodos.analizador);
+		misNodos.analizador.connect(contextoDeAudio.destination);
+		// comenzar ya.
+		misNodos.osc.start(0);
+            //espectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+       		// reproducir ahora (0 segundos desde ahora)
+	   requestAnimationFrame(visualizar.bind(this));
+	   //Borrar texto
+	   var parrafo = document.getElementById("provisional");
+		 parrafo.parentNode.removeChild(parrafo);
+	    }
+ 
+visualizar = function() {
+var canvas = document.querySelector('#canvas');
+var ctd = canvas.getContext('2d');
+var ancho = document.getElementById('marco').offsetWidth -80;
+
+canvas.width= ancho;
+canvas.height= 256; 
+
+
+  var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+  misNodos.analizador.getByteTimeDomainData(muestras);
+  //console.log(
+  //muestras.length
+  
+  //)
+  
+  var max=0;
+  for(var i = 0; i < muestras.length; i++){
+			max = muestras[i] > max ? muestras[i] : max;
+		}
+	//console.log(
+      //"maximo:  "+max )
+	  max= max-128		
+  for (var i = 0; i < muestras.length; i++) {
+    var valor = muestras[i];
+    var porcentaje = valor / 256;
+	
+    var alto = canvas.height * porcentaje;
+    var offset = canvas.height - alto;
+    var trazo = canvas.width/muestras.length;
+    ctd.fillStyle = "#333";
+    ctd.font="14px Helvetica";
+	ctd.fillRect(i * trazo, offset, 1, 1);
+	ctd.moveTo(0, 128);
+	ctd.lineTo(ancho, 128);
+	ctd.stroke();
+	
+  	ctd.fillText ('0', 5, 128)
+	
+	//dibujamaximo(ctd,max);
+	document.querySelector('#maximo').innerHTML = max;
+	dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+	document.querySelector('#dB').innerHTML = dB;
+	dBs=20*Math.log(0.5)/Math.LN10;
+	document.querySelector('#dBs').innerHTML = dBs;
+  }
+  requestAnimationFrame(visualizar.bind(this));
+};      
+
+function dibujamaximo(c,m){       
+c.beginPath();
+c.moveTo(0, 128+m);
+c.lineTo(20, 128+m);
+var a= 128+m;
+c.fillStyle = "rgb(25,255,0)";
+c.fillText (m, 5, a);
+c.stroke();
+	}
+
+function potenciometro(slider) {
+            if(contextoDeAudio.activeSourceCount > 0) {
+                if(slider.id == 'freq') {
+                    var FREQ = slider.value;
+                    misNodos.osc.frequency.value = FREQ;
+				document.querySelector('#valorfreq').innerHTML = FREQ;
+                }
+                else if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.ganancia.gain.value = volumen;
+					document.querySelector('#valorvol').innerHTML = volumen;
+                }
+            }
+        }
+
+
+
+
+
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+  </body>
+</html>

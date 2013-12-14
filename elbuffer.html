@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+     <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+   <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onLoad="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Cambia la navegación</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+           <a href="" class="navbar-brand">El audio en la web</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+        <h3 class="text-muted">El Buffer</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Cambiar navegación</button>
+          </p>
+          
+          <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">
+              <h2>Cargando sonidos</h2>
+               <p> La Web Audio API utiliza un <code>AudioBuffer</code> para los sonidos de corta y media longitud. El enfoque básico de carga es el uso de XMLHttpRequest, una petición vía http al servidor, para buscar los archivos de sonido.</p>
+
+<p>En nuestro contexto de audio, podemos utilizar archivos de datos de audio en varios formatos, como WAV, MP3, AAC, OGG y otros. La compatibilidad con navegadores para diferentes formatos de audio varía según <a href="http://www.w3schools.com/html/html5_audio.asp" target="_blank">esta tabla</a>.</p>
+
+<p>El siguiente código muestra la carga una muestra de sonido:
+</p>
+              
+              <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+   // Creamos el contexto de audio
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	var contextoDeAudio = new AudioContext();
+    // CARGAMOS el archivo con petición asíncorna XMLHTTP
+    function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Tipo de respuesta:
+        peticion.responseType = 'arraybuffer';
+        // Cuando cargen los datos de audio:
+        peticion.onload = function() {
+        	contextoDeAudio.decodeAudioData(peticion.response, function(buffer) {
+      			mibuffer = buffer;
+    		}, onError);
+  		}
+  		request.send();
+	}
+            </code></pre>
+           </div>   
+            
+       <p>Los datos de audio del archivo son binarios (no de texto), por lo que establecemos el tipo de respuesta  responseType de la solicitud como <code>'arraybuffer'</code>, para almacenarlos temporalmente y poder trabajar con ellos. Para obtener más información acerca de ArrayBuffers, puedes leer la especificación sobre las peticiones <a href="https://dvcs.w3.org/hg/xhr/raw-file/tip/Overview.html" title="Peticiones de carga asíncronas" target="_blank">XMLHttpRequest</a>.</p>
+
+
+<p>Una vez que los datos del archivo de audio (no decodificado) han sido recibidos, que pueden conservarse para una decodificación posterior, o puede ser decodificado de forma inmediata utilizando el método AudioContext <code>decodeAudioData()</code>. Este método toma del ArrayBuffer los datos del archivo de audio almacenados en <code>peticion.response</code>, la respuesta de nuestra petición, y decodifica de forma asíncrona (no bloquea el proceso principal de JavaScript en ejecución).</p>
+<p>Cuando <code>decodeAudioData()</code> ha terminado, se llama a una función de devolución que proporciona los datos de audio PCM decodificado como AudioBuffer.
+</p>   
+       
+      </div><!--/span-->         
+      
+          </div><!--/row-->
+        </div><!--/span-->
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation" >
+          <div class="list-group">
+            
+            <a href="comenzando.html" class="list-group-item ">Comenzando</a>
+            <a href="#" class="list-group-item active">El Bufer</a>
+            <a href="oscilador.html" class="list-group-item">Oscilador</a>
+            <a href="espectro.html" class="list-group-item ">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script>
+
+function comprobar(){
+	 var contextClass = (window.AudioContext || 
+    window.webkitAudioContext || 
+    window.mozAudioContext ||
+    window.oAudioContext || 
+    window.msAudioContext);
+    if (contextClass) {
+       alert(' La Web Audio API está diponible!'); 
+
+    } else {
+        alert( 'La Web Audio API  no está diponible.'); 
+       }
+	
+	
+	}
+
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+    <script src="bootstrap/js/affix.js"></script>
+  </body>
+</html>

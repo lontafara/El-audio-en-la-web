@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+   <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onLoad="captarEntrada()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Despilega el menú</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">PFC. Web Audio API</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="#">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button>
+          </p>
+          <div class="jumbotron" id="marco">
+            <div id="provisional"><h1>¿Tienes micrófono?</h1></div>
+            <p>Esudio sobre la web audio API.</p>
+            <canvas></canvas>
+          </div>
+          <div class="row">
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Generar sonidos</h2>
+              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+              <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Cadena de audio</h2>
+              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+              <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Los nodos</h2>
+              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+              <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Visualizando el sonido</h2>
+              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+              <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Afinador experimental</h2>
+              <p>Estás sobre los <span id="freq">0</span> Hz. Si has permitido a la aplicación utilizar tu entrada de micrófono. Esta frecuencia está calculada sobre un detector de pico. Si necesitas más precisión, puedes revisar el <a href="#">Afinador experimental</a></p>
+              <p><a class="btn btn-default" href="#" role="button">Ver detalles &raquo;</a></p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Sobre el proyecto</h2>
+              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+              <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
+            </div><!--/span-->
+          </div><!--/row-->
+        </div><!--/span-->
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+          <div class="list-group">
+            <a href="#" class="list-group-item  active">Sobre la Web audio API</a>
+            <a href="comenzando.html" class="list-group-item">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="oscilador.html" class="list-group-item">Oscilador</a>
+            <a href="espectro.html" class="list-group-item ">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script type="text/javascript">
+var frecuencia;
+
+function captarEntrada() {
+	
+
+    getUserMedia({audio:true}, al_aire);
+}
+function error() {
+    alert('Falló la generación de la cadena de Audio. Utilizas chrome o Safari?');
+}
+
+function getUserMedia(dictionary, callback) {
+    try {
+        navigator.webkitGetUserMedia(dictionary, callback, error);
+    } catch (e) {
+        alert('webkitGetUserMedia threw exception :' + e);
+    }
+}
+
+
+
+function al_aire(fuente) {
+    var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+    var datos_de_fuente = contextoDeAudio.createMediaStreamSource(fuente);
+	var frecuenciaDeMuestreo = contextoDeAudio.sampleRate;
+	
+	// Nodo de audio.
+	
+    // Conétalo a su destinio...
+    analizador = contextoDeAudio.createAnalyser();
+    analizador.fftSize = 2048;
+	analizador.smoothingTimeConstant = 0.8;
+    datos_de_fuente.connect( analizador );
+	//analizador.connect(contextoDeAudio.destination);
+	marcoespectro = setInterval(dibujaEspectro, 20);
+	
+	freqs = new Uint8Array(analizador.frequencyBinCount);
+    tiempos = new Uint8Array(analizador.frequencyBinCount);
+	var parrafo = document.getElementById("provisional");
+	parrafo.parentNode.removeChild(parrafo);
+}
+
+
+	
+function dibujaEspectro(){
+
+  var WIDTH = document.getElementById('marco').offsetWidth -80;
+  var HEIGHT= 200;
+  // Get the frequency data from the currently playing music
+  analizador.getByteFrequencyData(freqs);
+  analizador.getByteTimeDomainData(tiempos);
+
+  var width = Math.floor(1/freqs.length, 10);
+
+  var canvas = document.querySelector('canvas');
+  var ContextoDeDibujo = canvas.getContext('2d');
+ 
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  //Calculo mi maximo
+
+  
+	
+ 
+  // Dibujando el espectro.
+  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+    var value = freqs[i];
+    var percent = value / 256;
+    var height = HEIGHT * percent;
+    var offset = HEIGHT - height - 1;
+    var barWidth = WIDTH/analizador.frequencyBinCount;
+    var hue = i/analizador.frequencyBinCount * 360;
+    ContextoDeDibujo.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+    ContextoDeDibujo.fillRect(i * barWidth, offset, barWidth, height);
+  }
+
+  // Dibujamdo el Gráfico en el dominio del tiempo.
+  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+    var value = tiempos[i];
+    var percent = value / 256;
+    var height = HEIGHT * percent;
+    var offset = HEIGHT - height - 1;
+    var barWidth = WIDTH/analizador.frequencyBinCount;
+    ContextoDeDibujo.fillStyle = 'black';
+    ContextoDeDibujo.fillRect(i * barWidth, offset, 1, 2);
+  }
+
+ 
+return frecuencia;		
+		
+		
+		} 
+	
+    
+
+
+
+
+</script>
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+  </body>
+</html>

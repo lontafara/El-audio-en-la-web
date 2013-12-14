@@ -1,0 +1,196 @@
+<html lang="en" __fvdsurfcanyoninserted="1"><head>
+    <!-- Meta, title, CSS, favicons, etc. -->
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<title>
+  
+Estudio sobre la web audio API
+  
+</title>
+
+<!-- Bootstrap core CSS -->
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Documentation extras -->
+<link href="bootstrap/css/docs.css" rel="stylesheet">
+<link href="bootstrap/css/pygments-manni.css" rel="stylesheet">
+<!--[if lt IE 9]><script src="./docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+
+<!-- Favicons -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="docs-assets/ico/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="docs-assets/ico/favicon.png">
+
+
+</head>
+  <body class="bs-docs-home" style="" data-twttr-rendered="true" onLoad="captarEntrada()">
+    <a class="sr-only" href="#content">Ir al contenido</a>
+
+    <!-- Docs master nav -->
+    <header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" role="banner">
+  <div class="container">
+    <div class="navbar-header">
+      <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+        <span class="sr-only">Despliega el menú</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="" class="navbar-brand">El audio en la web</a>
+    </div>
+    <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Inicio</a></li>
+            <li><a href="#proyecto" style="padding-top: 4px;">Proyecto<br><sub class="label label-warning">en construcción</sub></a></li>
+            <li><a href="comenzando.html">Ejemplos</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <a href="#">Sobre mí</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+    <main class="bs-masthead" id="content" role="main">
+  <div class="container" id="marco" >
+    <div id="provisional"><h1>¿Tienes micrófono?</h1></div>
+    <p class="lead">Un estudio sobre la Web Audio API.</p>
+    <canvas></canvas>
+  </div>
+</main>
+
+
+    <footer class="container" role="contentinfo">
+     
+
+     
+
+
+     
+    </footer>
+<script type="text/javascript">
+var frecuencia;
+
+function captarEntrada() {
+	
+
+    getUserMedia({audio:true}, al_aire);
+}
+function error() {
+    alert('Falló la generación de la cadena de Audio. Utilizas chrome o Safari?');
+}
+
+function getUserMedia(dictionary, callback) {
+    try {
+        navigator.webkitGetUserMedia(dictionary, callback, error);
+    } catch (e) {
+        alert('webkitGetUserMedia threw exception :' + e);
+    }
+}
+
+
+
+function al_aire(fuente) {
+    var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+    var datos_de_fuente = contextoDeAudio.createMediaStreamSource(fuente);
+	var frecuenciaDeMuestreo = contextoDeAudio.sampleRate;
+	
+	// Nodo de audio.
+	
+    // Conétalo a su destinio...
+    analizador = contextoDeAudio.createAnalyser();
+    analizador.fftSize = 2048;
+	analizador.smoothingTimeConstant = 0.8;
+    datos_de_fuente.connect( analizador );
+	//analizador.connect(contextoDeAudio.destination);
+	marcoespectro = setInterval(dibujaEspectro, 20);
+	
+	freqs = new Uint8Array(analizador.frequencyBinCount);
+    tiempos = new Uint8Array(analizador.frequencyBinCount);
+	var parrafo = document.getElementById("provisional");
+	parrafo.parentNode.removeChild(parrafo);
+}
+
+
+	
+function dibujaEspectro(){
+
+  var WIDTH = document.getElementById('marco').offsetWidth -80;
+  var HEIGHT= 200;
+  // Get the frequency data from the currently playing music
+  analizador.getByteFrequencyData(freqs);
+  analizador.getByteTimeDomainData(tiempos);
+
+  var width = Math.floor(1/freqs.length, 10);
+
+  var canvas = document.querySelector('canvas');
+  var ContextoDeDibujo = canvas.getContext('2d');
+ 
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  //Calculo mi maximo
+
+  
+	
+ 
+  // Dibujando el espectro.
+  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+    var value = freqs[i];
+    var percent = value / 256;
+    var height = HEIGHT * percent;
+    var offset = HEIGHT - height - 1;
+    var barWidth = WIDTH/analizador.frequencyBinCount;
+    var hue = i/analizador.frequencyBinCount * 360;
+    ContextoDeDibujo.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+    ContextoDeDibujo.fillRect(i * barWidth, offset, barWidth, height);
+  }
+
+  // Dibujamdo el Gráfico en el dominio del tiempo.
+  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+    var value = tiempos[i];
+    var percent = value / 256;
+    var height = HEIGHT * percent;
+    var offset = HEIGHT - height - 1;
+    var barWidth = WIDTH/analizador.frequencyBinCount;
+    ContextoDeDibujo.fillStyle = 'black';
+    ContextoDeDibujo.fillRect(i * barWidth, offset, 1, 2);
+  }
+
+ 
+return frecuencia;		
+		
+		
+		} 
+	
+    
+
+
+
+
+</script>
+
+ 
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="bootstrap/js/bootstrap.js"></script>
+
+
+
+
+
+
+
+  
+
+</body></html>

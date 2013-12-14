@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+     <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+     <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+ <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onLoad="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Despilega el menú</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+           <a href="" class="navbar-brand">El audio en la web</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+       
+        <h3 class="text-muted">Compresor</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button>
+          </p>
+          <div class="jumbotron">
+             <div id="marco"><div id="provisional"></div><canvas id="espectro"></canvas></div>
+             
+          </div>
+          <div class="row">
+            <div class="col-6 col-sm-12 col-lg-4">
+              	<p> El compresor de rango dinámico es una herramienta muy común en la producción musical y el desarrollo de aplicaciones interactivas de audio.</p>
+              	<p>Nos permite reducir los niveles más altos de señal para prevenir la distorsión.</p>
+                <p>En el ejemplo se ha incluido un medidor experimental de dB mediante el nodo <code>createScriptProcessor</code>que toma el nivel de salida del nodo compresor, calcula el máximo valor y lo presenta en pantalla sobre en elemento <code> canvas </code> </p>
+             </div>
+              <div class="col-6 col-sm-6 col-lg-4"> 
+             <div class="bs-callout bs-callout-info">
+                     <h4>Compresor:</h4>
+                     <div class="medidor pull-left" style="margin-right:10px">
+            				<canvas id="meter1" width="50" height="200"></canvas>
+        				</div>
+                               <dl class="nav nav-pills ">
+                                <dt>Umbral: </dt>
+                                <dd><input id="umbral" onchange="potenciometro(this)" type="range" min="-100" max="0" step="1" value="-24" /></dd>
+                                <dd><span id="umbral-valor">-24</span>&nbsp;dB<dd>
+                               
+                                <dt>Ratio de Compresión: </dt>
+                                <dd><input id="ratio" onchange="potenciometro(this)" type="range" min="1" max="0" step="20" value="12" /></dd>
+                                <dd><span>1:</span><span id="ratio-valor">12</span>.<br><small>dB entrada/salida</small></dd>
+                                 <dt>Reducción en dB =<span id="reduccion">0</span>&nbsp;dB</dt>
+                                </dl>
+                   			</div>
+            
+           	</div> <!--/span-->
+            
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Controles</h2>
+               <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
+                 <ul class="list-unstyled">      
+            		 <li><p><strong>Volumen:</strong></li>
+               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="3" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valrvol">1</span></li>
+                     </ul>
+                	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
+            <button class="btn btn-warning" data-toggle="modal" data-target="#myModal">Ver Código fuente</button>
+
+		<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Compresor</h4>
+      </div>
+      <div class="modal-body">
+        <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">  
+               
+    //Indicadores
+        var canvas = document.querySelector('#meter1');
+		var ctx = canvas.getContext('2d');
+	    var w = canvas.width;
+	    var h = canvas.height;  
+		ctx.fillStyle = '#F7F7F7';
+	    ctx.fillRect(0,0,w,h);  
+   //espectro
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+    function playPause(){
+    if (suena) {
+        // Stop
+         var source = miFuente;
+             source.noteOff(0); 
+        startOffset += contextoDeAudio.currentTime - this.comienzo;
+        console.log('Pausado en', startOffset);
+        // Grabar posición donde se pausó.
+        document.querySelector('#play').innerHTML= 'Reproducir';
+        //Pulsa el botón reproducir!!
+        pulsaElBotonReproducir();
+    
+      } else {
+        
+        comienzo = contextoDeAudio.currentTime;
+        console.log('started at', startOffset);
+        var source = contextoDeAudio.createBufferSource();
+         source.buffer = mibuffer;
+         source.loop = true;
+         source = cadenaDeAudio(source);
+                
+                // se puede pasar tambien contextoDeAudio.currentTime
+          suena==true;
+        //source.noteOn(0);
+         source.start(0, startOffset % source.buffer.duration);  
+         
+          marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+          miFuente = source;
+         document.querySelector('#play').innerHTML= 'Pausar';
+         var parrafo = document.getElementById("provisional");
+         parrafo.parentNode.removeChild(parrafo);   
+    
+      }
+      this.suena = !this.suena;
+    }
+
+ function cadenaDeAudio(source) {
+
+		    misNodos.panner = contextoDeAudio.createPanner();
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+			misNodos.compresor = contextoDeAudio.createDynamicsCompressor();
+			//procesador para dibujar los indicadores de volumen
+			misNodos.procesador = contextoDeAudio.createScriptProcessor(1024,1,1);
+			misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			// Ajustamos los valores del nodo a los del potenciómetro
+            
+			    
+            //Volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+ 			// Compresor
+			var umbral = document.querySelector('#umbral').value;
+			var ratio = document.querySelector('#ratio').value;	
+ 			misNodos.compresor.threshold.value = umbral;
+			misNodos.compresor.ratio.value= ratio;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+            //misNodos.panner.connect(misNodos.procesador);
+			misNodos.volumen.connect(misNodos.compresor);
+			misNodos.compresor.connect(misNodos.procesador);
+			misNodos.compresor.connect(misNodos.analizador);
+			misNodos.procesador.connect(contextoDeAudio.destination);
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+			misNodos.compresor.connect(contextoDeAudio.destination);
+			
+			misNodos.procesador.onaudioprocess = function(e){
+			
+				
+				//Borramos el canvas 
+				ctx.fillStyle = '#F7F7F7';
+				ctx.fillRect(0,0,w,h);
+				
+				
+				//var intl = e.inputBuffer.getChannelData(0);// Devuelve un Floar 32 Array con los valores de la PCM entre -1 y 1
+				//ej. : valor  de muestra: 0.13016553223133087. Suleo (en dB) 20log(0.00000000000001/1)= -340.  Pero visualizamos sobre un piso de 72dB  72dB=0.  
+				// calculamos el pico cada 1024 muestras de la PCM del buffer
+			 var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+			 misNodos.analizador.getByteTimeDomainData(muestras);
+			 //console.log(
+			 //muestras.length
+						  //)  
+              var max=0;
+              for(var i = 0; i < muestras.length; i++){
+                        max = muestras[i] > max ? muestras[i] : max;
+                    }
+                //console.log(
+                  //"maximo:  "+max )
+				max= max-128
+				var dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+				//Dibujamos en el canvas
+				//Dibujamos el  dedegradadoado
+				var degradado = ctx.createLinearGradient(w/10,h*0.2,w/10,h*0.95);
+				degradado.addColorStop(0,'red');
+				degradado.addColorStop(-6/-42,'yellow');
+				degradado.addColorStop(1,'green');
+				//rellena ell fondo
+				
+				ctx.fillStyle = degradado;
+				//Dibujamos el rectángulo
+				ctx.fillRect(w/6,h*0.8*(dB/-42),w*8/10,(h*0.95)-h*0.8*(dB/-42));
+				//dibujamos el texto de dB
+				ctx.fillStyle="black";
+				ctx.font = "Arial 14pt";
+				ctx.textAlign = "center";
+				ctx.fillText(Math.round(dB*100)/100+' dB',w/2,h-h*0.025);
+				ctx.fillText(-6, 8, h*0.8*(-6/-42));
+				ctx.fillText(-12, 8, h*0.8*(-12/-42));
+				ctx.fillText(-24, 8, h*0.8*(-24/-42));
+
+		
+};// FIN Pocesador
+ 
+			
+			
+			
+			
+return source;			
+
+ }
+
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+             if(contextoDeAudio.activeSourceCount > 0) {
+                if(slider.id == 'pan' || slider.id == 'pany') {
+                    var panX = document.querySelector('#pan').value;
+               		var panY = document.querySelector('#pany').value;	
+                    misNodos.panner.setPosition(panX, panY, 0);
+                }			
+                else if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+                }
+				else if(slider.id == 'umbral') {
+                    var umbral = slider.value;
+                    misNodos.compresor.threshold.value = umbral;
+					document.querySelector('#umbral-valor').innerHTML= umbral;
+					//Reducción en dB
+					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
+					document.querySelector('#reduccion').innerHTML= reduccion;
+                }
+				else if(slider.id == 'ratio') {
+                    var ratio = slider.value;
+					misNodos.compresor.ratio.value = ratio;
+					document.querySelector('#ratio-valor').innerHTML= ratio;
+					//Reducción en dB
+					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
+					document.querySelector('#reduccion').innerHTML= reduccion;
+					
+                }
+				
+            }
+}
+
+               
+                              </code></pre></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+        
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+            
+
+
+</div><!--/span-->
+
+            
+            
+  </div><!--row -->         
+      <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">        
+              <p>Para crear un <strong>nodo compresor de señal</strong> utilizamos la interfaz <code>createDynamicsCompressor</code> a la que podemos pasar los siguientes atributos para ajustar la dinámica de nuestra señal: </p>
+              <dl> 
+              <dt>threshold // en Decibelios</dt>
+              <dd>Valor en decibelios sobre los que la compresión comienza a hacer efecto</dd>
+                  <dt> knee; // en Decibelios</dt>
+                  <dd>Rango sobre el umbral (threshold) en el que el compresor comienza a hacer efecto</dd>
+                  <dt> ratio; // en enteros</dt>
+                  <dd>cantidad de dBs en que cambia la entrada para un cambio de 1 dB en la salida</dd>
+                  <dt> reduction; // en Decibelios</dt>
+                  <dd> reducción de ganancia en dBs a aplicar</dd>
+                  <dt> attack; // en segundos</dt>
+                  <dd>Tiempo para reducir la ganancia 10 dBs</dd>
+                  <dt> release; // en segundos</dt>
+                  <dd>Tiempo para incrementar la ganancia 10 dBs</dd>
+              <dd></dd>
+              </dl>  
+            </div><!--/span-->
+            
+           
+          </div><!--/row-->
+        </div>
+
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+          <div class="list-group">
+            
+            <a href="comenzando.html" class="list-group-item">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="oscilador.html" class="list-group-item ">Oscilador</a>
+            <a href="espectro.html" class="list-group-item">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="#" class="list-group-item active">Compresor</a>
+
+          </div>
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script type="text/javascript">
+//Pulsa el botón reproducir!!
+var parrafo = document.createElement("h1");
+var contenido = document.createTextNode("Pulsa el botón reproducir");
+parrafo.appendChild(contenido);
+document.querySelector('#provisional').appendChild(parrafo);
+
+//Indicadores
+    var canvas = document.querySelector('#meter1');
+		var ctx = canvas.getContext('2d');
+	    var w = canvas.width;
+	    var h = canvas.height;  
+		ctx.fillStyle = '#F7F7F7';
+	    ctx.fillRect(0,0,w,h);  
+//espectro
+
+
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+	//Pulsa el botón reproducir!!
+    pulsaElBotonReproducir();
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('started at', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+
+		    misNodos.panner = contextoDeAudio.createPanner();
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+			misNodos.compresor = contextoDeAudio.createDynamicsCompressor();
+			//procesador para dibujar los indicadores de volumen
+			misNodos.procesador = contextoDeAudio.createScriptProcessor(1024,1,1);
+			misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			// Ajustamos los valores del nodo a los del potenciómetro
+            
+			    
+            //Volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+ 			// Compresor
+			var umbral = document.querySelector('#umbral').value;
+			var ratio = document.querySelector('#ratio').value;	
+ 			misNodos.compresor.threshold.value = umbral;
+			misNodos.compresor.ratio.value= ratio;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+            //misNodos.panner.connect(misNodos.procesador);
+			misNodos.volumen.connect(misNodos.compresor);
+			misNodos.compresor.connect(misNodos.procesador);
+			misNodos.compresor.connect(misNodos.analizador);
+			misNodos.procesador.connect(contextoDeAudio.destination);
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+			misNodos.compresor.connect(contextoDeAudio.destination);
+			
+			misNodos.procesador.onaudioprocess = function(e){
+			//CANAL L
+				
+				//Borramos el canvas 
+				ctx.fillStyle = '#F7F7F7';
+				ctx.fillRect(0,0,w,h);
+				
+				
+				//var intl = e.inputBuffer.getChannelData(0);// Devuelve un Floar 32 Array con los valores de la PCM entre -1 y 1
+				//ej. : valor  de muestra: 0.13016553223133087. Suleo (en dB) 20log(0.00000000000001/1)= -340.  Pero visualizamos sobre un piso de 72dB  72dB=0.  
+				// calculamos el pico cada 1024 muestras de la PCM del buffer
+			var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+						  misNodos.analizador.getByteTimeDomainData(muestras);
+						  //console.log(
+						  //muestras.length
+						  
+						  //)
+						  
+						  var max=0;
+						  for(var i = 0; i < muestras.length; i++){
+									max = muestras[i] > max ? muestras[i] : max;
+								}
+							//console.log(
+							  //"maximo:  "+max )
+				max= max-128
+				var dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+				//Dibujamos en el canvas
+				//Dibujamos el  dedegradadoado
+				var degradado = ctx.createLinearGradient(w/10,h*0.2,w/10,h*0.95);
+				degradado.addColorStop(0,'red');
+				degradado.addColorStop(-6/-42,'yellow');
+				degradado.addColorStop(1,'green');
+				//rellena ell fondo
+				
+				ctx.fillStyle = degradado;
+				//Dibujamos el rectángulo
+				ctx.fillRect(w/6,h*0.8*(dB/-42),w*8/10,(h*0.95)-h*0.8*(dB/-42));
+				//dibujamos el texto de dB
+				ctx.fillStyle="black";
+				ctx.font = "Arial 14pt";
+				ctx.textAlign = "center";
+				ctx.fillText(Math.round(dB*100)/100+' dB',w/2,h-h*0.025);
+				ctx.fillText(-6, 8, h*0.8*(-6/-42));
+				ctx.fillText(-12, 8, h*0.8*(-12/-42));
+				ctx.fillText(-24, 8, h*0.8*(-24/-42));
+
+		
+};// FIN Rocesador
+ 
+			
+			
+			
+			
+return source;			
+
+ }
+ 
+ 
+
+ 
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+             if(contextoDeAudio.activeSourceCount > 0) {
+                if(slider.id == 'pan' || slider.id == 'pany') {
+                    var panX = document.querySelector('#pan').value;
+               		var panY = document.querySelector('#pany').value;	
+                    misNodos.panner.setPosition(panX, panY, 0);
+                }			
+                else if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+                }
+				else if(slider.id == 'umbral') {
+                    var umbral = slider.value;
+                    misNodos.compresor.threshold.value = umbral;
+					document.querySelector('#umbral-valor').innerHTML= umbral;
+					//Reducción en dB
+					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
+					document.querySelector('#reduccion').innerHTML= reduccion;
+                }
+				else if(slider.id == 'ratio') {
+                    var ratio = slider.value;
+					misNodos.compresor.ratio.value = ratio;
+					document.querySelector('#ratio-valor').innerHTML= ratio;
+					//Reducción en dB
+					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
+					document.querySelector('#reduccion').innerHTML= reduccion;
+					
+                }
+				
+            }
+}
+
+function pulsaElBotonReproducir(){
+		var provisional = document.createElement('div');
+		provisional.setAttribute('id', 'provisional');
+		var parrafo = document.createElement("h1");
+		var contenido = document.createTextNode("Pulsa el botón reproducir");
+		provisional.appendChild(parrafo);
+		parrafo.appendChild(contenido);
+		var espectro = document.getElementById('espectro');
+		var papa = espectro.parentNode;
+		papa.insertBefore( provisional, espectro);
+		document.querySelector('#provisional').appendChild(parrafo);
+}
+	
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+  </body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="">
+
+    <title>Estudio de la Web audio API</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+     <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../docs-assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+     <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+ <style>
+ #provisional{ position:absolute;}
+ 
+ </style>
+  </head>
+
+  <body onload="prettyPrint()">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Despilega el menú</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+           <a href="" class="navbar-brand">El audio en la web</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="#proyecto">Proyecto</a></li>
+            <li class="active"><a href="comenzando.html">Ejemplos</a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </div><!-- /.navbar -->
+
+    <div class="container">
+    <div class="header">
+        <h3 class="text-muted">Visualización del espectro</h3>
+      </div>
+
+      <div class="row row-offcanvas row-offcanvas-right">
+
+        <div class="col-xs-12 col-sm-9">
+          <p class="pull-right visible-xs">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button> </p>
+          <div class="jumbotron" id="marco">
+             <div id="marco"><div id="provisional"></div><canvas id="espectro"></canvas></div>
+             
+          </div>
+          <div class="row">
+            <div class="col-8 col-sm-6 col-lg-8">
+              <h2>Descripción</h2>
+              <p> El Nodo Analizador, conectado en este ejemplo después del nodo de ganancia, nos permite visualizar el espectro de la señal. El método <code>getByteFrequencyData</code> copia los datos de frecuencia al array que le pasemos. En este caso un array de 512 valores enteros cuantificados con 8 Bits, la mitad del tamaño de nuestra resolución de la FFT (1024) y obtenido a partir del atributo del analizador <code>frequencyBinCount</code>. El cual nos devuelve una constante: el valor de la FFT/2. Cada muestra se almacena en un Byte (256 niveles). El piso es 0 = 0dB.</p>
+              <p>Una vez establecida la cadena de audio y su contexto, el código sería algo como esto:</p>
+              <div class="highlight">
+         
+            <pre class="prettyprint"><code class="language-js">
+ var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+ misNodos.analizador.getByteFrequencyData(datos_frecuencia);</code></pre></div>
+            <p>Para graficar los valores de nuestra cadena de datos creamos una función de dibujo utilizando el elemento <code>&lt;canvas&gt;</code> que recorra este array de datos y los imprima en pantalla </p>
+            </div><!--/span-->
+            <div class="col-6 col-sm-6 col-lg-4">
+              <h2>Controles</h2>
+                 <ul class="list-unstyled">      
+            		 <li><strong>Volumen:</strong></li>
+               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valorvol">1</span></li>
+            </ul>
+              <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
+                   
+        
+                	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
+            
+            
+     <button class="btn btn-warning " data-toggle="modal" data-target="#myModal">
+  Ver Código fuente
+</button>
+</div><!--/span-->
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Visualización del espectro</h4>
+      </div>
+      <div class="modal-body">
+        <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">  
+               
+        var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+	//Pulsa el botón reproducir!!
+    pulsaElBotonReproducir();
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('started at', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+		    misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			//ajustes de volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+
+			misNodos.volumen.connect(misNodos.analizador)
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+return source;			
+
+ }
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+                 if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+                }
+}
+
+                              </code></pre></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+        
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->    
+          </div><!--/row-->
+        </div><!--/span-->
+		
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar" role="navigation">
+          <div class="list-group">
+            
+            <a href="comenzando.html" class="list-group-item">Comenzando</a>
+            <a href="elbuffer.html" class="list-group-item">El Buffer</a>
+            <a href="oscilador.html" class="list-group-item ">Oscilador</a>
+            <a href="espectro.html" class="list-group-item active">Espectro</a>
+            <a href="paneado.html" class="list-group-item">Paneado</a>
+            <a href="filtros.html" class="list-group-item">Filtros</a>
+            <a href="compresor.html" class="list-group-item">Compresor</a>
+          </div>
+        </div><!--/span-->
+      
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Luis Javier Gil 2013</p>
+      </footer>
+
+    </div><!--/.container-->
+<script type="text/javascript">
+//Pulsa el botón reproducir!!
+var parrafo = document.createElement("h1");
+var contenido = document.createTextNode("Pulsa el botón reproducir");
+parrafo.appendChild(contenido);
+document.querySelector('#provisional').appendChild(parrafo);
+
+
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+	//Pulsa el botón reproducir!!
+    pulsaElBotonReproducir();
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('started at', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+		    misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			//ajustes de volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+
+			misNodos.volumen.connect(misNodos.analizador)
+						
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+return source;			
+
+ }
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+                 if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+                }
+}
+
+function pulsaElBotonReproducir(){
+		var provisional = document.createElement('div');
+		provisional.setAttribute('id', 'provisional');
+		var parrafo = document.createElement("h1");
+		var contenido = document.createTextNode("Pulsa el botón reproducir");
+		provisional.appendChild(parrafo);
+		parrafo.appendChild(contenido);
+		var espectro = document.getElementById('espectro');
+		var papa = espectro.parentNode;
+		papa.insertBefore( provisional, espectro);
+		document.querySelector('#provisional').appendChild(parrafo);
+}
+	
+</script>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="bootstrap/js/offcanvas.js"></script>
+  </body>
+</html>
