@@ -110,10 +110,27 @@
       <dd>Salida de audio y buffers de procesado offline</dd>
       </dl>      
  	  
-  <p>En la imagen puede observarse el ruteo de señal del ejemplo del compresor</p> 
+	<h2>La cadena de Audio</h2>
+    
+    Cada nodo de audio puede ser conectado a otro con la función <code>connect()</code>. Estableceremos una fuente y un destino. La fuente suele ser una dadena de datos de audio proveniente de un buffer de entrada y la salida o <code>.destination</code>  es un nodo especial asociado con la salida de audio de tu sistema operativo, a la cual tiene acceso el navegador.</p>
      <p style="text-align:center">
       <img src="imagenes/fuente-compresor.jpg" alt="compresor web audio API" class="img-thumbnail img-responsive"/>
       </p>
+        <p>En la imagen puede observarse el ruteo de  una señal de audio en una aplicación, lo que podríamos escribir con javascript de la siguiente manera:</p> 
+         
+        <div class="highlight">
+               <pre class="prettyprint"><code class="language-js">   
+        var misNodos ={};
+        //Ruteo
+        fuentedeAudio.connect(misNodos.volumen);
+        misNodos.volumen.connect(misNodos.compresor);
+        misNodos.compresor.connect(misNodos.analizador);
+        misNodos.analizador.connect(misNodos.procesador);
+        misNodos.procesador.connect(contextoDeAudio.destination);
+        </code></pre></div>
+ <p> Una vez hemos establecido nuestra cadena de audio podemos cambiarla dinámicamente e implementar aplicaciones interactivas que cambien la cadena de audio. Solemos utilizar la llamada <code>nodo.disconnect(salida)</code>      
+        
+        
       </div><!--/span-->         
       
           </div><!--/row-->
