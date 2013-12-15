@@ -141,15 +141,188 @@ Profundizando en el <code>PannerNode</code> encontraremos aspectos que increment
       <div class="modal-body">
         <div class="highlight">
                <pre class="prettyprint"><code class="language-js">  
-//creamos el panner
-misNodos.panner = contextoDeAudio.createPanner();
-// Ajustamos los valores del nodo a los del potenciómetro
-// Panner
-var panX = document.querySelector('#pan').value;
-var panY = document.querySelector('#pany').value;
-var panZ = document.querySelector('#panz').value;
-misNodos.panner.setPosition(panX, panY, panZ);
-// x,y,z representan las coordenadas en el espacio
+
+		//Pulsa el botón reproducir!!
+		var parrafo = document.createElement("h1");
+		var contenido = document.createTextNode("Pulsa el botón reproducir");
+		parrafo.appendChild(contenido);
+		document.querySelector('#provisional').appendChild(parrafo);
+
+		var espectro = document.querySelector('#espectro');
+        var ctxe = espectro.getContext('2d');
+        var ancho = document.getElementById('marco').offsetWidth -80;
+		espectro.width= ancho;
+        espectro.height= 200;
+        var alto=200;
+		var ancho_barra;
+		var resolucion = 5;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	//crea el contexto de audio
+		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var suena = false;	
+		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
+		
+		var comienzo = 0;
+ 		var startOffset = 0;
+
+	cargarSonido("audios/Huajara.mp3");
+	
+	
+		
+	
+	
+	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var peticion = new XMLHttpRequest();
+        peticion.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        peticion.responseType = 'arraybuffer';
+        peticion.addEventListener('load', bufferSound, false);
+        peticion.send();
+    
+	}
+	
+	
+     function bufferSound(event) {
+         var peticion = event.target;
+         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
+         mibuffer = buffer;
+    }
+
+
+function playPause(){
+if (suena) {
+    // Stop
+	 var source = miFuente;
+         source.noteOff(0); 
+    startOffset += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', startOffset);
+    // Grabar posición donde se pausó.
+	document.querySelector('#play').innerHTML= 'Reproducir';
+	//Pulsa el botón reproducir!!
+    pulsaElBotonReproducir();
+
+  } else {
+	
+    comienzo = contextoDeAudio.currentTime;
+    console.log('comienza en', startOffset);
+    var source = contextoDeAudio.createBufferSource();
+     source.buffer = mibuffer;
+     source.loop = true;
+     source = cadenaDeAudio(source);
+            
+            // se puede pasar tambien contextoDeAudio.currentTime
+      suena==true;
+	//source.noteOn(0);
+     source.start(0, startOffset % source.buffer.duration);  
+	 
+      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+      miFuente = source;
+     document.querySelector('#play').innerHTML= 'Pausar';
+	 var parrafo = document.getElementById("provisional");
+	 parrafo.parentNode.removeChild(parrafo);   
+
+  }
+  this.suena = !this.suena;
+}
+
+ function cadenaDeAudio(source) {
+
+		    misNodos.volumen = contextoDeAudio.createGainNode();
+			misNodos.panner = contextoDeAudio.createPanner();
+		    misNodos.analizador = contextoDeAudio.createAnalyser();
+			//Analizador
+			misNodos.analizador.smoothingTimeConstant = 0.3;
+			misNodos.analizador.fftSize=1024;
+			misNodos.analizador.minDecibels = -120;
+  			misNodos.analizador.maxDecibels = 0;
+			
+			// Ajustamos los valores del nodo a los del potenciómetro
+            // Panner
+            var panX = document.querySelector('#pan').value;
+			var panY = document.querySelector('#pany').value;
+			var panZ = document.querySelector('#panz').value;
+			misNodos.panner.setPosition(panX, panY, panZ); // xy z representan las coordenadas en el espacio
+			
+			//ajustes de volumen
+			var volumen = document.querySelector('#volumen').value;
+			misNodos.volumen.gain.value = volumen;
+			
+			//Ruteo
+			source.connect(misNodos.volumen);
+
+			misNodos.volumen.connect(misNodos.panner)
+			misNodos.panner.connect(misNodos.analizador)			
+			misNodos.analizador.connect(contextoDeAudio.destination);
+			
+return source;			
+
+ }
+
+function dibujaEspectro(){
+		
+		ctxe.clearRect(0, 0, ancho, alto);
+		
+		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
+            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+			
+			var NumerodeBarras = Math.round(ancho / resolucion);
+            for (var i = 0; i < NumerodeBarras; i++) {
+				//for (var i = 0; i < (datos_frecuencia.length); i++) {
+                var magnitud = datos_frecuencia[i];
+                // ajustamos las variables para dibujarlas en el canvas
+				//dibujamos tipo hue ;)
+				var hue = i/datos_frecuencia.length * 360
+				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+            }
+	
+	}
+
+function cambiaResolucion_mas(){
+		resolucion = resolucion*2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+	return resolucion;
+	}
+	
+ function cambiaResolucion_menos(){
+		resolucion = resolucion/2;	
+		document.querySelector('#resolucion').innerHTML= resolucion;
+		return resolucion;
+	}	
+	
+
+
+function potenciometro(slider) {
+	  if(contextoDeAudio.activeSourceCount > 0) {
+                if(slider.id == 'pan' || slider.id == 'pany' || slider.id == 'panz') {
+                    var panX = document.querySelector('#pan').value;
+               		var panY = document.querySelector('#pany').value;
+					var panZ = document.querySelector('#panz').value;
+					
+                    misNodos.panner.setPosition(panX, panY, panZ);
+                }
+                 else if(slider.id == 'volumen') {
+                    var volumen = slider.value;
+                    misNodos.volumen.gain.value = volumen;
+                }
+	  }
+}
+
+function pulsaElBotonReproducir(){
+		var provisional = document.createElement('div');
+		provisional.setAttribute('id', 'provisional');
+		var parrafo = document.createElement("h1");
+		var contenido = document.createTextNode("Pulsa el botón reproducir");
+		provisional.appendChild(parrafo);
+		parrafo.appendChild(contenido);
+		var espectro = document.getElementById('espectro');
+		var papa = espectro.parentNode;
+		papa.insertBefore( provisional, espectro);
+		document.querySelector('#provisional').appendChild(parrafo);
+}
+
             </code></pre></div>
       </div>
       <div class="modal-footer">
@@ -185,7 +358,7 @@ misNodos.panner.setPosition(panX, panY, panZ);
 
     </div><!--/.container-->
 <script type="text/javascript">
-//Pulsa el botón reproducir!!
+
 		//Pulsa el botón reproducir!!
 		var parrafo = document.createElement("h1");
 		var contenido = document.createTextNode("Pulsa el botón reproducir");
