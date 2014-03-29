@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Documento sin título</title>
+</head>
+
+<body>
+
+</body>
+
+<script>
+
+var valores= [129,224,210,136,228]
+var posiciones =[13,20,15,12,17] 
+var valoresordenados = new Array() ;
+var posicionesordenadas = new Array();
+
+
+					var objeto = new Array();
+						for (i=0; i<= valores.length;i++){
+							
+						
+								objeto[i]= new  Array(2); 
+								objeto[i][0]= valores[i];
+								objeto[i][1] = posiciones[i];
+							
+						}
+						objeto.sort(function(a,b){return b[0] - a[0] ;});
+						
+						for (i=0; i< posiciones.length;i++){
+							valoresordenados[i] = objeto[i][0];
+							posicionesordenadas[i] = objeto[i][1];
+							
+							}
+						
+						
+						
+console.log(objeto);
+document.write(objeto);
+document.write('<br>');
+document.write(valoresordenados);
+document.write('<br>');
+document.write(posicionesordenadas);
+</script>
+</html>

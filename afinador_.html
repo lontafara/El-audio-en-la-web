@@ -1,0 +1,1344 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Detector de Armónicos</title>
+<link href="http://getbootstrap.com/dist/css/bootstrap.css" rel="stylesheet">
+<style>
+.warning1{
+	background-color:#fffdf1;
+	
+	}
+.dangera{
+	background-color: #FFCC99;
+}	
+/* Ejemplos*/
+.ejwarning1{
+	background-color:#fffdf1;
+	
+	}
+.ejdangera{
+	background-color: #FFCC99;
+}	
+.ejdanger{
+	background-color: #f2dede;}
+.ejwarning{
+	background-color:#fcf8e3;}
+.ejsuccess{
+	background-color:#d0e9c6;}	
+</style>
+<script>
+        
+        var contextoDeAudio, analizador, mibuffer, procesado,
+            miFuente,
+            misNodos = {},espectro,
+            suena = false;
+ 
+        function init() {
+            if('webkitAudioContext' in window) {
+               contextoDeAudio = new webkitAudioContext();
+            }
+        }
+ 
+ // CARGAMOS el archivo con petición asíncorna XMLHTTP
+     function cargarSonido(url) {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+
+        // Cuando cargen los datos de audio:
+        request.responseType = 'arraybuffer';
+        request.addEventListener('load', bufferSound, false);
+        request.send();
+    
+	}
+
+
+     function bufferSound(event) {
+         var request = event.target;
+         var buffer = contextoDeAudio.createBuffer(request.response, false);
+         mibuffer = buffer;
+    }
+//------USAMOS  MICrófono
+	function sonidoDirecto() {
+		
+    	getUserMedia({audio:true}, reproducirMic);
+	}
+	function error() {
+		alert('Stream generation failed.');
+	}
+	function getUserMedia(tipo, llamada) {
+    	try {
+        	navigator.webkitGetUserMedia(tipo, llamada, error);
+   	    } catch (e) {
+        	alert('webkitGetUserMedia excepción :' + e);
+        }
+   }	 
+ 
+//play desde micro
+function reproducirMic(stream) {
+	   
+	       var source = contextoDeAudio.createMediaStreamSource(stream);
+            // crea analizador
+			analizador = contextoDeAudio.createAnalyser();
+			analizador.fftSize = 2048;            
+            cadenaDeAudio(source);
+            espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
+            miFuente = source;
+        }  
+      //establecemos la cadena de audio 
+        function cadenaDeAudio(source) {
+
+            misNodos.volume = contextoDeAudio.createGainNode();
+
+ 
+    
+            var volume = document.querySelector('#volume').value;
+ 
+           
+            misNodos.volume.gain.value = volume;
+ 
+            // Ruta de audio conexiones
+           
+            source.connect(misNodos.volume);
+            misNodos.volume.connect(analizador);
+ 
+            return source;
+        }
+ 		
+        function playSound() {
+			 contextoDeAudio = new webkitAudioContext();
+                // creamos los nodos
+				//procesado = contextoDeAudio.createScriptProcessor(1024);
+				//procesado.onaudioprocess = enProceso;
+                analizador = contextoDeAudio.createAnalyser();
+                //analizador.smoothingTimeConstant = 0.85;
+				analizador.fftSize = 2048;
+                //analizador.connect(procesado);
+				analizador.connect(contextoDeAudio.destination);
+ 
+                cargarSonido("audios/Huajara.mp3");
+            // create a new AudioBufferSourceNode
+            var source = contextoDeAudio.createBufferSource();
+            source.buffer = mibuffer;
+            source.loop = true;
+            source = cadenaDeAudio(source);
+            // play justo ahora (0 seconds from now)
+            // podemos pasar también contextoDeAudio.currentTime
+            source.noteOn(0);
+            espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
+            miFuente = source;
+        }
+ 
+        function pauseSound() {
+            var source = miFuente;
+            source.noteOff(0);
+            clearInterval(espectro);
+        }
+ 
+        function toggleSound(button) {
+            if(!suena) {
+                playSound();
+                button.value = "Parar Sonido";
+                suena = true;
+            }
+            else {
+                pauseSound();
+                button.value = "Reproducir";
+                suena = false;
+            }
+        }
+ 
+        function drawSpectrum() {
+            var canvas = document.querySelector('canvas');
+            var ctx = canvas.getContext('2d');
+            ANCHO=1024;
+			ALTO=256;
+			canvas.width = ANCHO;
+            canvas.height = ALTO;
+            var bar_width = 1;
+ 
+            ctx.clearRect(0, 0, ANCHO, ALTO);
+			//dibujo línea comparador
+			dibujarlineacomparador( ctx, 0, ANCHO, 128);
+			dibujarescala(ctx, ALTO,ANCHO);
+			
+ 			//-----Byte de enteros, array de 256 valores de amplitud
+            var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
+            analizador.getByteFrequencyData(ByteDatosFrec);
+			
+			//---- VISUALIZAMOS ALGUNAS VARIABLES
+			//console.log(ByteDatosFrec);
+			
+			//var nyquist = contextoDeAudio.samplerate/2;
+			//console.log(nyquist);
+            (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
+			(document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
+			(document.querySelector(".fftsize")).innerHTML = analizador.fftSize;
+
+			//--------------
+			
+			var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
+            var maximo = ByteDatosFrec[0];
+			var pico = ByteDatosFrec[0];
+			var valores = new Array();
+			var posiciones = new Array();
+			var valorespico = new Array();
+			var posicionespico = new Array();
+			//for (var i = 0; i < NumerodeBarras; i++) {
+			
+			//calculo directo del máximo	
+			/*
+			var losmayores = new Array();
+			losmayores = Math.max.apply( Math, ByteDatosFrec );
+			console.log(
+			losmayores
+			)	
+			*/
+			//Notas--------
+			
+							
+				
+				
+                
+				//Comparo valores mayores que el umbral
+				
+				for (var m = 0; m <= (ByteDatosFrec.length); m++) {
+					       	  var magnitud = ByteDatosFrec[m];
+							  var siguiente = ByteDatosFrec[m+1];
+							  var anterior = ByteDatosFrec[m-1];
+							  //variables dibujo
+								  
+                					var porcentaje = magnitud / 256;
+									var altobarra = ALTO * porcentaje;
+									var margen = ALTO - altobarra -1;
+							  if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)){
+									 
+								 pico = magnitud;
+								 valores.push(pico);
+								 posiciones.push(m);
+								 ctx.fillStyle = "rgb(25,255,0)";
+                                 ctx.fillRect(m, margen, bar_width, altobarra);	 
+								 
+								 var pos = m;
+								 var frecuencia = ((pos*contextoDeAudio.sampleRate)/analizador.fftSize);
+								 /* //Comprobación ¿Qué frecuencias tengo en cada porción del nalizador?
+								 var freq0 = ((0*contextoDeAudio.sampleRate)/analizador.fftSize);
+								 var freq1 = ((1*contextoDeAudio.sampleRate)/analizador.fftSize);
+								 var freq2 = ((2*contextoDeAudio.sampleRate)/analizador.fftSize);
+								 var freq3 = ((3*contextoDeAudio.sampleRate)/analizador.fftSize);
+								 //console.log('freq0= '+freq0+'freq1= '+freq1+'freq2= '+freq2+'freq3= '+freq3);
+								 */
+								 }else{
+									 
+									ctx.fillStyle = "rgb(0,0,0)"
+                					ctx.fillRect(m, margen, bar_width, altobarra);
+									 
+									 }
+								  
+								  
+								   
+							
+							//termina para los mayores de 100
+							// Ajustar valores en el canvas
+				/*var porcentaje = valor / 256;
+				var altobarra = ALTO * porcentaje;
+				var margen = ALTO - altobarra -1;
+				*/
+				
+				(document.querySelector(".valor")).innerHTML = maximo;
+				(document.querySelector(".picos")).innerHTML = valores;
+				(document.querySelector(".posicion")).innerHTML = posiciones;
+				(document.querySelector(".frecuencia")).innerHTML = frecuencia;
+					
+				
+				// Sexta cuerda
+				var MIb6 = [3,13,25];
+				var MI6b = [7,10,14,17];
+				var MI6 = [7,14,28];
+				var MI6a = [7,14,29];
+				var FA6 = [4,7,15];
+				var FA6a = [4,8,15];
+				var FAs6 = [4,8,12,16];
+				var FAs6a = [4,8,12,17];
+				var SOL6 = [4,8,13,17];
+				var SOL6a = [4,8,13,18];
+				var SOLs6 = [9,18,35];
+				var SOLs6a = [9,19,36];
+				var LA6 = [9,19,38];
+				var LA6a = [5,10,19];
+				var LAs6 = [5,10,15,20,25];
+				var LAs6a =[5,10,15,21];
+				var SI6 = [5,11,21,42];//revisa
+				var SI6a = [5,11,22,43];
+				var DO6 = [6,11,17,22];
+				var DO6a = [6,11,17,23];
+				var DOs6 = [6,12,18,24];
+				var DOs6a = [6,12,18,25];
+				var RE6 = [6,13,19,25];
+				var RE6a = [6,13,20,26];
+				var REs6 = [7,13,20];
+				var REs6a = [7,13,21];
+				var MI68 = [7,14,28,56,225];
+				//Quinta cuerda
+				var LA58 =[9,19,28];
+				var RE5 = [6,19,25];
+				var RE5a = [6,13,26];
+				var MI5 = [7,14,21,28];
+				var MI5a = [7,14,22,29];
+				var FA5 = [15,22,30];
+				var FA5a = [15,23,31];
+				var FAs5 = [8,16,63];
+				var FAs5a = [8,17,64];
+				var SOL5 = [8,17,25];
+				var SOL5a = [8,17,26];
+				var SOLs5 = [9,18,27];
+				var SOLs5a = [9,18,28];
+				
+				//CUARTA CUERDA
+				var LA4 =[19,38,75];
+				var LAs4 =[10,20,30];
+				var LAs4a =[10,20,31]
+				var SI4 = [11,21,63];;
+				var DO4 = [11,22,33];
+				//var DOs4 = [12,24];
+				var RE48 = [6,25,50];
+				var RE48a = [6,26,52];
+				//Tercera CUERDA
+				// SEGUMDA CUERDA
+				var SI2 = [21,42,63];
+				var MI2 = [14,28,56];
+				// PRIMERA CUERDA
+				var MI1 = [14,28,56];
+				var FA1 = [15,30,60];
+				var FAs1 = [6,63,126];
+				var SOL1 = [17,67,134];
+				
+					
+					//Compruebo cuando he completado un ciclo de muestras 
+					if(m == ByteDatosFrec.length){
+						if(posiciones.length == 0){borra();}
+					//console.log('posiciones: '+posiciones)
+					//console.log('valores: '+valores)
+					(document.querySelector(".nota")).innerHTML = '--';
+						if (posiciones){
+							(document.querySelector(".nota")).innerHTML = '?';
+							 marca(posiciones);
+							//borra();
+							//comprobar todas las notas
+							//SEXTA CUERDA
+									if(comprobar(MIb6, posiciones)===true){
+											(document.querySelector(".nota")).innerHTML = '6RE#';
+											(document.querySelector("#REs")).className = 'danger';
+										}
+										if(comprobar(MI6b, posiciones)===true){
+											(document.querySelector(".nota")).innerHTML = '6MI--';
+											(document.querySelector("#MI")).className = 'dangera';
+										}
+								if(comprobar(MI6, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6MI';
+									(document.querySelector("#MI")).className = 'danger';
+								}
+									if(comprobar(MI6a, posiciones)===true){
+										(document.querySelector(".nota")).innerHTML = '6MI++';
+										(document.querySelector("#MI")).className = 'dangera';
+									}
+									
+								if(comprobar(FA6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6FA';
+								(document.querySelector("#FA")).className = 'danger';
+								
+								}
+									if(comprobar(FA6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6FA++';
+									(document.querySelector("#FA")).className = 'dangera';
+									
+									}
+								if(comprobar(FAs6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6FA#';
+								(document.querySelector("#FAs")).className = 'danger';
+								}
+									if(comprobar(FAs6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6FA#++';
+									(document.querySelector("#FAs")).className = 'dangera';
+									}
+								if(comprobar(SOL6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6SOL';
+								(document.querySelector("#SOL")).className = 'danger';
+								}
+									if(comprobar(SOL6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6SOL++';
+									(document.querySelector("#SOL")).className = 'dangera';
+									}
+								if(comprobar(SOLs6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6SOL#';
+								(document.querySelector("#SOLs")).className = 'danger';
+								}
+									if(comprobar(SOLs6, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6SOL#++';
+									(document.querySelector("#SOLs")).className = 'dangera';
+									}
+								if(comprobar(LA6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'LA';
+								(document.querySelector("#LA")).className = 'danger';
+								}
+									if(comprobar(LA6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'LA++';
+									(document.querySelector("#LA")).className = 'dangera';
+									}
+								if(comprobar(LAs6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'LA#';
+								(document.querySelector("#LAs")).className = 'danger';
+								}
+									if(comprobar(LAs6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'LA#++';
+									(document.querySelector("#LAs")).className = 'dangera';
+									}
+								if(comprobar(SI6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SI';
+								(document.querySelector("#SI")).className = 'danger';
+								}
+									if(comprobar(SI6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'SI++';
+									(document.querySelector("#SI")).className = 'dangera';
+									}
+								if(comprobar(DO6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'DO';
+								(document.querySelector("#DO")).className = 'danger';
+								}
+									if(comprobar(DO6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'DO++';
+									(document.querySelector("#DO")).className = 'dangera';
+									}
+								if(comprobar(DOs6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6DO#';
+								(document.querySelector("#DOs")).className = 'danger';
+								}
+									if(comprobar(DOs6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6DO#++';
+									(document.querySelector("#DOs")).className = 'dangera';
+									}
+								if(comprobar(RE6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6RE';
+								(document.querySelector("#RE")).className = 'danger';
+								}
+									if(comprobar(RE6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = '6RE++';
+									(document.querySelector("#RE")).className = 'dangera';
+									}
+								if(comprobar(REs6, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'RE#';
+								(document.querySelector("#REs")).className = 'danger';
+								}
+									if(comprobar(REs6a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'RE#++';
+									(document.querySelector("#REs")).className = 'dangera';
+									}
+								if(comprobar(MI68, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = '6MI';
+								(document.querySelector("#MI")).className = 'danger';
+								}
+							//QUINTA CUERDA
+								if(comprobar(RE5, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'RE';
+									(document.querySelector("#RE")).className = 'danger';
+								}
+									if(comprobar(RE5a, posiciones)===true){
+										(document.querySelector(".nota")).innerHTML = 'RE++';
+										(document.querySelector("#RE")).className = 'dangera';
+									}
+								if(comprobar(MI5, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'MI';
+								(document.querySelector("#MI")).className = 'danger';
+								}	
+									if(comprobar(MI5a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'MI++';
+									(document.querySelector("#MI")).className = 'dangera';
+									}	
+								if(comprobar(FA5, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'FA';
+								(document.querySelector("#FA")).className = 'danger';
+								}
+									if(comprobar(FA5a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'FA++';
+									(document.querySelector("#FA")).className = 'dangera';
+									}
+								if(comprobar(FAs5, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'FA#';
+								(document.querySelector("#FAs")).className = 'danger';
+								}
+									if(comprobar(FAs5a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'FA#++';
+									(document.querySelector("#FAs")).className = 'dangera';
+									}
+								if(comprobar(SOL5, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SOL';
+								(document.querySelector("#SOL")).className = 'danger';
+								}
+									if(comprobar(SOL5a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'SOL++';
+									(document.querySelector("#SOL")).className = 'dangera';
+									}
+								if(comprobar(SOLs5, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SOL#';
+								(document.querySelector("#SOLs")).className = 'danger';
+								}
+									if(comprobar(SOLs5a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'SOL#++';
+									(document.querySelector("#SOLs")).className = 'dangera';
+									}
+								if(comprobar(LA58, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'LA';
+								(document.querySelector("#LA")).className = 'danger';
+								}
+							//CUARTA CUERDA
+							
+								if(comprobar(LAs4, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'LA#';
+								(document.querySelector("#LAs")).className = 'danger';
+								}
+									if(comprobar(LAs4a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'LA#++';
+									(document.querySelector("#LAs")).className = 'dangera';
+									}
+								if(comprobar(SI4, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SI';
+								(document.querySelector("#SI")).className = 'danger';
+								}
+								if(comprobar(DO4, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'DO';
+								(document.querySelector("#DO")).className = 'danger';
+								}
+								//if(comprobar(DOs4, posiciones)===true){
+								//(document.querySelector(".nota")).innerHTML = 'DO#';
+								//}
+								if(comprobar(RE48, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'RE';
+								(document.querySelector("#RE")).className = 'danger';
+								}
+									if(comprobar(RE48a, posiciones)===true){
+									(document.querySelector(".nota")).innerHTML = 'RE++';
+									(document.querySelector("#RE")).className = 'dangera';
+									}	
+								//TERCERA CUERDA
+							
+							
+								//SEGUNDA CUERDA
+								if(comprobar(SI2, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SI';
+								(document.querySelector("#SI")).className = 'danger';
+								}
+								if(comprobar(MI2, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'MI';
+								(document.querySelector("#MI")).className = 'danger';
+								}
+								//PRIMERA CUERDA
+								
+								if(comprobar(MI1, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'MI';
+								(document.querySelector("#MI")).className = 'danger';
+								}
+								if(comprobar(FA1, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'FA1';
+								(document.querySelector("#FA")).className = 'danger';
+								}
+								if(comprobar(FAs1, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'FA#1';
+								(document.querySelector("#FAs")).className = 'danger';
+								}
+								if(comprobar(SOL1, posiciones)===true){
+								(document.querySelector(".nota")).innerHTML = 'SOL1';
+								(document.querySelector("#SOL")).className = 'danger';
+								}
+							
+						}
+					
+					}
+								
+	
+				}
+				
+				
+				
+				
+				
+            }
+		
+	//Check notas/porciones de fecuencia
+	function comprobar(intervalosNota, posiciones){ 
+	 
+	  for (var i = 0; i < (intervalosNota.length); i++){
+		  var a = posiciones.indexOf(intervalosNota[i]);
+		 if( a == -1) 
+		 {return false;}
+	  }
+	  //alert('esta');
+	  //marca(intervalosNota, posiciones);
+	  return true;
+	  }
+
+function marca(posiciones){
+	
+	 for (var i = 0; i < (posiciones.length); i++){
+	//$("#" + intervalosNota[i]).html(intervalosNota[i]) ;
+	//console.log(intervalosNota[i]);
+	 if($("#" + posiciones[i]) || $("."+posiciones[i])){
+		if($("#" + posiciones[i]).hasClass('aprox')){
+			$("#" + posiciones[i]).addClass('warning')
+			}
+		if($("." + posiciones[i]).hasClass('aprox1'))
+			{
+			$("." + posiciones[i]).addClass('warning1')
+		}else{
+		$("#" + posiciones[i]).addClass('success');
+			}
+	 
+	 
+	 }
+	
+	 }
+
+
+}
+ 
+	
+	
+	function borra(){
+		$( "*" ).removeClass('success');
+		$( "*" ).removeClass('danger');
+		$( "*" ).removeClass('warning');
+		$( "*" ).removeClass('warning1');
+		$( "*" ).removeClass('dangera');
+		}
+	
+				
+        //}
+		// línea comparador---------
+		function dibujarlineacomparador(c, x1, x2, y) {
+		c.lineWidth = 1;
+		var adaptedY = Math.floor(y)+0.5;
+		c.beginPath();
+		c.moveTo(x1, 128);
+		c.lineTo(x2, 128);
+		c.stroke();
+		}
+	    //Escala 256 valores
+		function dibujarescala(c, ALTO, ANCHO){
+			c.font = "8pt Helvetica";
+			var count =  0;
+			var paso =50;
+			var margen=5;
+			var colHead = 0;
+			var rowHead = 0;
+			yScalar = (ALTO - colHead - margen) / (ALTO);
+			for (i=ALTO; i>=0; i -=paso){
+				y = colHead + (yScalar * count * paso);
+				c.fillText (i, margen, y + margen )
+				c.moveTo(rowHead, y)
+				c.lineTo(ANCHO, y)
+					count++;
+				}
+			
+			
+		}
+		
+		
+        function sliderChange(slider) {
+            if(contextoDeAudio.activeSourceCount > 0) {
+                 if(slider.id == 'volume') {
+                    var volume = slider.value;
+                    misNodos.volume.gain.value = volume;
+                }
+            }
+        }
+    </script>
+
+
+</head>
+
+<body onLoad="init();">
+<div class="container">
+      <div class="header">
+        <ul class="nav nav-pills pull-right">
+        </ul>
+        <h3 class="text-muted">Análisis armónico</h3>
+      </div>
+
+      <div class="jumbotron">
+         <canvas width="1024" height="200"></canvas>
+      </div>
+
+      <div class="row marketing">
+        <div class="col-lg-6">
+            <ul class="list-unstyled">
+              <li><input id="play" onclick="toggleSound(this)" type="button" value="Reproducir" class="btn btn-default"/></li>
+              <li><button class="btn btn-default" onclick="sonidoDirecto()">usar sonido de microfono</button></li>
+              </ul>
+              <div class="alert alert-info">
+              <ul class="list-unstyled">
+              
+              <li><span>Volumen:</span></li>
+              <li><input id="volume" onchange="sliderChange(this)" type="range" min="0" max="1" step="0.01" value="1" /></li>
+              </ul>
+              </div>
+        </div>
+        
+
+       <div class="col-lg-6">
+          <div class="alert alert-success">
+			<span>Valor del máximo: &nbsp;<strong><span class="valor">0</span></strong></span><br>
+			<span>Posiciones de los armónicos:&nbsp;<strong><span class="posicion">posicion</span></strong></span><br>
+            <span>Mayor Frecuencia:&nbsp;<strong><span class="frecuencia">frecuencia</span>&nbsp;</strong>Hz</span><br>
+            <span>Picos de frecuencia:&nbsp;<strong><span class="picos">picos</span>&nbsp;</strong>Hz</span><br>
+            <span>NOTA: &nbsp;<strong><span class="nota">--</span></strong></span>
+		
+  
+           <p>FFTsize <span class="fftsize">0</span></p>
+            <p>Frecuencia de Muestreo: <span class="muestreo">0</span></p>
+            
+    		<p>Longitud del Array de datos de frecuencia. 8 Bits : <span class="arrayFreq">0</span></p>
+           </div>  
+      </div>
+       </div>
+ <div class="row marketing">
+ <div class="col-lg-6 table-responsive">
+ 
+ 
+<table class="table table-bordered table-condensed valores">
+<thead>
+<tr><th colspan="13" style="text-align:center">Correspondencia de frecuencias</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td align="left" width="19">&nbsp;</td>
+
+                            <td  id="DO" align="center" style="font-weight: bold" width=
+                            "41">C</td>
+
+                            <td id="DOs" align="center" style="font-weight: bold" width=
+                            "41">C#</td>
+
+                            <td id="RE"align="center" style="font-weight: bold" width=
+                            "41">D</td>
+
+                            <td id="REs" align="center" style="font-weight: bold" width=
+                            "41">Eb</td>
+
+                            <td id="MI" align="center" style="font-weight: bold" width=
+                            "41">E</td>
+
+                            <td id="FA" align="center" style="font-weight: bold" width=
+                            "41">F</td>
+
+                            <td id="Fas"align="center" style="font-weight: bold" width=
+                            "41">F#</td>
+
+                            <td id="SOL" align="center" style="font-weight: bold" width=
+                            "41">G</td>
+
+                            <td id="SOLs" align="center" style="font-weight: bold" width=
+                            "41">G#</td>
+
+                            <td id="LA" align="center" style="font-weight: bold" width=
+                            "41">A</td>
+
+                            <td id="LAs" align="center" style="font-weight: bold" width=
+                            "41">Bb</td>
+
+                            <td id="SI" align="center" style="font-weight: bold" width=
+                            "41">B</td>
+                        </tr>
+
+                        
+
+                        
+
+                        <tr>
+                            <td style="font-weight: bold">2</td>
+
+                            <td>65.41</td>
+
+                            <td>69.30</td>
+
+                            <td>73.42</td>
+
+                            <td>77.78</td>
+
+                            <td>82.41</td>
+
+                            <td>87.31</td>
+
+                            <td id="4" data-toggle="tooltip" data-placement="top" title="&plusmn; 1Hz Posición de la muestra = 4">92.50</td>
+
+                            <td>98.00</td>
+
+                            <td>103.8</td>
+
+                            <td>110.0</td>
+
+                            <td id="5" data-toggle="tooltip" data-placement="left" title="&plusmn; 1Hz Posición de la muestra = 5">116.5</td>
+
+                            <td>123.5</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">3</td>
+
+                            <td>130.8</td>
+
+                            <td id="6" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 6">138.6</td>
+
+                            <td  class="aprox1 6" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 6">146.8</td>
+
+                            <td>155.6</td>
+
+                            <td id="7" data-toggle="tooltip" data-placement="left" title="&plusmn; 1Hz Posición de la muestra = 7">164.8</td>
+
+                            <td>174.6</td>
+
+                            <td id="8" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 8">185.0</td>
+
+                            <td >196.0</td>
+
+                            <td id="9" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 9">207.7</td>
+
+                            <td>220.0</td>
+
+                            <td id="10" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 10">233.1</td>
+
+                            <td>246.9</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">4</td>
+
+                            <td id="11" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 11">261.6</td>
+
+                            <td id="12" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 12">277.2</td>
+
+                            <td>293.7</td>
+
+                            <td class="aprox1 13" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 13">311.1</td>
+
+                            <td  id="14" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 14">329.6</td>
+
+                            <td id="15" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 15">349.2</td>
+
+                            <td id="16" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 16">370.0</td>
+
+                            <td id="17" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 17">392.0</td>
+
+                            <td class="aprox1 18" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 18">415.3</td>
+
+                            <td id="19" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 19">440.0</td>
+
+                            <td id="20" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 20">466.2</td>
+
+                            <td id="21" data-toggle="tooltip" data-placement="left" title="&plusmn; 1Hz Posición de la muestra = 21">493.9</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">5</td>
+
+                            <td class="aprox1 22" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 22">523.3</td>
+
+                            <td class="aprox1 24" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 24">554.4</td>
+
+                            <td id="25" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 25">587.3</td>
+
+                            <td>622.3</td>
+
+                            <td id="28" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 28">659.3</td>
+
+                            <td id="30" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 30">698.5</td>
+
+                            <td class="aprox1 32" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 32">740.0</td>
+
+                            <td>784.0</td>
+
+                            <td class="aprox1 35" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 35">830.6</td>
+
+                            <td class="aprox1 38" data-toggle="tooltip" data-placement="left" title="&plusmn; 10Hz Posición de la muestra = 38">880.0</td>
+
+                            <td id="40" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 40">932.3</td>
+
+                            <td id="42"  data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 42">987.8</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">6</td>
+
+                            <td id="45" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 45">1047</td>
+
+                            <td id="47" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 47">1109</td>
+
+                            <td id="50" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 50">1175</td>
+
+                            <td id="53" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 53">1245</td>
+
+                            <td id="56" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 56">1319</td>
+
+                            <td id="60" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 60">1397</td>
+
+                            <td id="63" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 63">1480</td>
+
+                            <td id="67" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 67">1568</td>
+
+                            <td id="71" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 71">1661</td>
+
+                            <td id="75" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 75">1760</td>
+
+                            <td>1865</td>
+
+                            <td>1976</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">7</td>
+
+                            <td id="89" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 89">2093</td>
+
+                            <td>2217</td>
+
+                            <td id="100" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 100">2349</td>
+
+                            <td id="106" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 106">2489</td>
+
+                            <td>2637</td>
+
+                            <td id="119" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 119">2794</td>
+
+                            <td id="126" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 126">2960</td>
+
+                            <td id="134" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 134">3136</td>
+
+                            <td id="142" class="aprox"data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 142">3322</td>
+
+                            <td id="150" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 150">3520</td>
+
+                            <td id="159" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 159">3729</td>
+
+                            <td>3951</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">8</td>
+
+                            <td>4186</td>
+
+                            <td id="189" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 189">4435</td>
+
+                            <td>4699</td>
+
+                            <td>4978</td>
+
+                            <td id="225" data-toggle="tooltip" data-placement="left" title="&plusmn; 1Hz Posición de la muestra = 225">5274</td>
+
+                            <td>5588</td>
+
+                            <td>5920</td>
+
+                            <td>6272</td>
+
+                            <td>6645</td>
+
+                            <td>7040</td>
+
+                            <td id="318" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 318">7459</td>
+
+                            <td id="337" class="aprox" data-toggle="tooltip" data-placement="left" title="&plusmn; 5Hz Posición de la muestra = 337">7902</td>
+                        </tr>
+                        <tr><td colspan="3">Código de colores:</td><td class="ejdanger" colspan="2">Nota aproximada</td><td class="ejdangera" colspan="2">Nota &plusmn; &frac14; de tono </td><td class="ejsuccess" colspan="2">Armónico centrado en &plusmn;1Hz</td><td class="ejwarning" colspan="2">Armónico centrado en &plusmn;5Hz</td><td class="ejwarning1"colspan="2">Armónico centrado en &plusmn;10Hz</td></tr>
+                    </tbody>
+                </table>
+</div>
+        <div class="col-lg-6 table-responsive">
+        <table class=" table table-condensed table-bordered">
+
+<tr><td>0</td><td>0</td></tr><tr><td>
+1</td><td>23.4375</td></tr><tr><td>
+2</td><td>46.875</td></tr><tr><td>
+3</td><td>70.3125</td></tr><tr><td>
+4</td><td>93.75</td></tr><tr><td>
+5</td><td>117.1875</td></tr><tr><td>
+6</td><td>140.625</td></tr><tr><td>
+7</td><td>164.0625</td></tr><tr><td>
+8</td><td>187.5</td></tr><tr><td>
+9</td><td>210.9375</td></tr><tr><td>
+10</td><td>234.375</td></tr><tr><td>
+11</td><td>257.8125</td></tr><tr><td>
+12</td><td>281.25</td></tr><tr><td>
+13</td><td>304.6875</td></tr><tr><td>
+14</td><td>328.125</td></tr><tr><td>
+15</td><td>351.5625</td></tr><tr><td>
+16</td><td>375</td></tr><tr><td>
+17</td><td>398.4375</td></tr><tr><td>
+18</td><td>421.875</td></tr><tr><td>
+19</td><td>445.3125</td></tr><tr><td>
+20</td><td>468.75</td></tr><tr><td>
+21</td><td>492.1875</td></tr><tr><td>
+22</td><td>515.625</td></tr><tr><td>
+23</td><td>539.0625</td></tr><tr><td>
+24</td><td>562.5</td></tr><tr><td>
+25</td><td>585.9375</td></tr><tr><td>
+26</td><td>609.375</td></tr><tr><td>
+27</td><td>632.8125</td></tr><tr><td>
+28</td><td>656.25</td></tr><tr><td>
+29</td><td>679.6875</td></tr><tr><td>
+30</td><td>703.125</td></tr><tr><td>
+31</td><td>726.5625</td></tr><tr><td>
+32</td><td>750</td></tr><tr><td>
+33</td><td>773.4375</td></tr><tr><td>
+34</td><td>796.875</td></tr><tr><td>
+35</td><td>820.3125</td></tr><tr><td>
+36</td><td>843.75</td></tr><tr><td>
+37</td><td>867.1875</td></tr><tr><td>
+38</td><td>890.625</td></tr><tr><td>
+39</td><td>914.0625</td></tr><tr><td>
+40</td><td>937.5</td></tr><tr><td>
+41</td><td>960.9375</td></tr><tr><td>
+42</td><td>984.375</td></tr><tr><td>
+43</td><td>1007.8125</td></tr><tr><td>
+44</td><td>1031.25</td></tr><tr><td>
+45</td><td>1054.6875</td></tr><tr><td>
+46</td><td>1078.125</td></tr><tr><td>
+47</td><td>1101.5625</td></tr><tr><td>
+48</td><td>1125</td></tr><tr><td>
+49</td><td>1148.4375</td></tr><tr><td>
+50</td><td>1171.875</td></tr><tr><td>
+51</td><td>1195.3125</td></tr><tr><td>
+52</td><td>1218.75</td></tr><tr><td>
+53</td><td>1242.1875</td></tr><tr><td>
+54</td><td>1265.625</td></tr><tr><td>
+55</td><td>1289.0625</td></tr><tr><td>
+56</td><td>1312.5</td></tr><tr><td>
+57</td><td>1335.9375</td></tr><tr><td>
+58</td><td>1359.375</td></tr><tr><td>
+59</td><td>1382.8125</td></tr><tr><td>
+60</td><td>1406.25</td></tr><tr><td>
+61</td><td>1429.6875</td></tr><tr><td>
+62</td><td>1453.125</td></tr><tr><td>
+63</td><td>1476.5625</td></tr><tr><td>
+64</td><td>1500</td></tr><tr><td>
+65</td><td>1523.4375</td></tr><tr><td>
+66</td><td>1546.875</td></tr><tr><td>
+67</td><td>1570.3125</td></tr><tr><td>
+68</td><td>1593.75</td></tr><tr><td>
+69</td><td>1617.1875</td></tr><tr><td>
+70</td><td>1640.625</td></tr><tr><td>
+71</td><td>1664.0625</td></tr><tr><td>
+72</td><td>1687.5</td></tr><tr><td>
+73</td><td>1710.9375</td></tr><tr><td>
+74</td><td>1734.375</td></tr><tr><td>
+75</td><td>1757.8125</td></tr><tr><td>
+76</td><td>1781.25</td></tr><tr><td>
+77</td><td>1804.6875</td></tr><tr><td>
+78</td><td>1828.125</td></tr><tr><td>
+79</td><td>1851.5625</td></tr><tr><td>
+80</td><td>1875</td></tr><tr><td>
+81</td><td>1898.4375</td></tr><tr><td>
+82</td><td>1921.875</td></tr><tr><td>
+83</td><td>1945.3125</td></tr><tr><td>
+84</td><td>1968.75</td></tr><tr><td>
+85</td><td>1992.1875</td></tr><tr><td>
+86</td><td>2015.625</td></tr><tr><td>
+87</td><td>2039.0625</td></tr><tr><td>
+88</td><td>2062.5</td></tr><tr><td>
+89</td><td>2085.9375</td></tr><tr><td>
+90</td><td>2109.375</td></tr><tr><td>
+91</td><td>2132.8125</td></tr><tr><td>
+92</td><td>2156.25</td></tr><tr><td>
+93</td><td>2179.6875</td></tr><tr><td>
+94</td><td>2203.125</td></tr><tr><td>
+95</td><td>2226.5625</td></tr><tr><td>
+96</td><td>2250</td></tr><tr><td>
+97</td><td>2273.4375</td></tr><tr><td>
+98</td><td>2296.875</td></tr><tr><td>
+99</td><td>2320.3125</td></tr><tr><td>
+100</td><td>2343.75</td></tr><tr><td>
+101</td><td>2367.1875</td></tr><tr><td>
+102</td><td>2390.625</td></tr><tr><td>
+103</td><td>2414.0625</td></tr><tr><td>
+104</td><td>2437.5</td></tr><tr><td>
+105</td><td>2460.9375</td></tr><tr><td>
+106</td><td>2484.375</td></tr><tr><td>
+107</td><td>2507.8125</td></tr><tr><td>
+108</td><td>2531.25</td></tr><tr><td>
+109</td><td>2554.6875</td></tr><tr><td>
+110</td><td>2578.125</td></tr><tr><td>
+111</td><td>2601.5625</td></tr><tr><td>
+112</td><td>2625</td></tr><tr><td>
+113</td><td>2648.4375</td></tr><tr><td>
+114</td><td>2671.875</td></tr><tr><td>
+115</td><td>2695.3125</td></tr><tr><td>
+116</td><td>2718.75</td></tr><tr><td>
+117</td><td>2742.1875</td></tr><tr><td>
+118</td><td>2765.625</td></tr><tr><td>
+119</td><td>2789.0625</td></tr><tr><td>
+120</td><td>2812.5</td></tr><tr><td>
+121</td><td>2835.9375</td></tr><tr><td>
+122</td><td>2859.375</td></tr><tr><td>
+123</td><td>2882.8125</td></tr><tr><td>
+124</td><td>2906.25</td></tr><tr><td>
+125</td><td>2929.6875</td></tr><tr><td>
+126</td><td>2953.125</td></tr><tr><td>
+127</td><td>2976.5625</td></tr><tr><td>
+128</td><td>3000</td></tr><tr><td>
+129</td><td>3023.4375</td></tr><tr><td>
+130</td><td>3046.875</td></tr><tr><td>
+131</td><td>3070.3125</td></tr><tr><td>
+132</td><td>3093.75</td></tr><tr><td>
+133</td><td>3117.1875</td></tr><tr><td>
+134</td><td>3140.625</td></tr><tr><td>
+135</td><td>3164.0625</td></tr><tr><td>
+136</td><td>3187.5</td></tr><tr><td>
+137</td><td>3210.9375</td></tr><tr><td>
+138</td><td>3234.375</td></tr><tr><td>
+139</td><td>3257.8125</td></tr><tr><td>
+140</td><td>3281.25</td></tr><tr><td>
+141</td><td>3304.6875</td></tr><tr><td>
+142</td><td>3328.125</td></tr><tr><td>
+143</td><td>3351.5625</td></tr><tr><td>
+144</td><td>3375</td></tr><tr><td>
+145</td><td>3398.4375</td></tr><tr><td>
+146</td><td>3421.875</td></tr><tr><td>
+147</td><td>3445.3125</td></tr><tr><td>
+148</td><td>3468.75</td></tr><tr><td>
+149</td><td>3492.1875</td></tr><tr><td>
+150</td><td>3515.625</td></tr><tr><td>
+151</td><td>3539.0625</td></tr><tr><td>
+152</td><td>3562.5</td></tr><tr><td>
+153</td><td>3585.9375</td></tr><tr><td>
+154</td><td>3609.375</td></tr><tr><td>
+155</td><td>3632.8125</td></tr><tr><td>
+156</td><td>3656.25</td></tr><tr><td>
+157</td><td>3679.6875</td></tr><tr><td>
+158</td><td>3703.125</td></tr><tr><td>
+159</td><td>3726.5625</td></tr><tr><td>
+160</td><td>3750</td></tr><tr><td>
+161</td><td>3773.4375</td></tr><tr><td>
+162</td><td>3796.875</td></tr><tr><td>
+163</td><td>3820.3125</td></tr><tr><td>
+164</td><td>3843.75</td></tr><tr><td>
+165</td><td>3867.1875</td></tr><tr><td>
+166</td><td>3890.625</td></tr><tr><td>
+167</td><td>3914.0625</td></tr><tr><td>
+168</td><td>3937.5</td></tr><tr><td>
+169</td><td>3960.9375</td></tr><tr><td>
+170</td><td>3984.375</td></tr><tr><td>
+171</td><td>4007.8125</td></tr><tr><td>
+172</td><td>4031.25</td></tr><tr><td>
+173</td><td>4054.6875</td></tr><tr><td>
+174</td><td>4078.125</td></tr><tr><td>
+175</td><td>4101.5625</td></tr><tr><td>
+176</td><td>4125</td></tr><tr><td>
+177</td><td>4148.4375</td></tr><tr><td>
+178</td><td>4171.875</td></tr><tr><td>
+179</td><td>4195.3125</td></tr><tr><td>
+180</td><td>4218.75</td></tr><tr><td>
+181</td><td>4242.1875</td></tr><tr><td>
+182</td><td>4265.625</td></tr><tr><td>
+183</td><td>4289.0625</td></tr><tr><td>
+184</td><td>4312.5</td></tr><tr><td>
+185</td><td>4335.9375</td></tr><tr><td>
+186</td><td>4359.375</td></tr><tr><td>
+187</td><td>4382.8125</td></tr><tr><td>
+188</td><td>4406.25</td></tr><tr><td>
+189</td><td>4429.6875</td></tr><tr><td>
+190</td><td>4453.125</td></tr><tr><td>
+191</td><td>4476.5625</td></tr><tr><td>
+192</td><td>4500</td></tr><tr><td>
+193</td><td>4523.4375</td></tr><tr><td>
+194</td><td>4546.875</td></tr><tr><td>
+195</td><td>4570.3125</td></tr><tr><td>
+196</td><td>4593.75</td></tr><tr><td>
+197</td><td>4617.1875</td></tr><tr><td>
+198</td><td>4640.625</td></tr><tr><td>
+199</td><td>4664.0625</td></tr><tr><td>
+200</td><td>4687.5</td></tr><tr><td>
+201</td><td>4710.9375</td></tr><tr><td>
+202</td><td>4734.375</td></tr><tr><td>
+203</td><td>4757.8125</td></tr><tr><td>
+204</td><td>4781.25</td></tr><tr><td>
+205</td><td>4804.6875</td></tr><tr><td>
+206</td><td>4828.125</td></tr><tr><td>
+207</td><td>4851.5625</td></tr><tr><td>
+208</td><td>4875</td></tr><tr><td>
+209</td><td>4898.4375</td></tr><tr><td>
+210</td><td>4921.875</td></tr><tr><td>
+211</td><td>4945.3125</td></tr><tr><td>
+212</td><td>4968.75</td></tr><tr><td>
+213</td><td>4992.1875</td></tr><tr><td>
+214</td><td>5015.625</td></tr><tr><td>
+215</td><td>5039.0625</td></tr><tr><td>
+216</td><td>5062.5</td></tr><tr><td>
+217</td><td>5085.9375</td></tr><tr><td>
+218</td><td>5109.375</td></tr><tr><td>
+219</td><td>5132.8125</td></tr><tr><td>
+220</td><td>5156.25</td></tr><tr><td>
+221</td><td>5179.6875</td></tr><tr><td>
+222</td><td>5203.125</td></tr><tr><td>
+223</td><td>5226.5625</td></tr><tr><td>
+224</td><td>5250</td></tr><tr><td>
+225</td><td>5273.4375</td></tr><tr><td>
+226</td><td>5296.875</td></tr><tr><td>
+227</td><td>5320.3125</td></tr><tr><td>
+228</td><td>5343.75</td></tr><tr><td>
+229</td><td>5367.1875</td></tr><tr><td>
+230</td><td>5390.625</td></tr><tr><td>
+231</td><td>5414.0625</td></tr><tr><td>
+232</td><td>5437.5</td></tr><tr><td>
+233</td><td>5460.9375</td></tr><tr><td>
+234</td><td>5484.375</td></tr><tr><td>
+235</td><td>5507.8125</td></tr><tr><td>
+236</td><td>5531.25</td></tr><tr><td>
+237</td><td>5554.6875</td></tr><tr><td>
+238</td><td>5578.125</td></tr><tr><td>
+239</td><td>5601.5625</td></tr><tr><td>
+240</td><td>5625</td></tr><tr><td>
+241</td><td>5648.4375</td></tr><tr><td>
+242</td><td>5671.875</td></tr><tr><td>
+243</td><td>5695.3125</td></tr><tr><td>
+244</td><td>5718.75</td></tr><tr><td>
+245</td><td>5742.1875</td></tr><tr><td>
+246</td><td>5765.625</td></tr><tr><td>
+247</td><td>5789.0625</td></tr><tr><td>
+248</td><td>5812.5</td></tr><tr><td>
+249</td><td>5835.9375</td></tr><tr><td>
+250</td><td>5859.375</td></tr><tr><td>
+251</td><td>5882.8125</td></tr><tr><td>
+252</td><td>5906.25</td></tr><tr><td>
+253</td><td>5929.6875</td></tr><tr><td>
+254</td><td>5953.125</td></tr><tr><td>
+255</td><td>5976.5625</td></tr><tr><td>
+256</td><td>6000</td></tr><tr><td>
+257</td><td>6023.4375</td></tr><tr><td>
+258</td><td>6046.875</td></tr><tr><td>
+259</td><td>6070.3125</td></tr><tr><td>
+260</td><td>6093.75</td></tr><tr><td>
+261</td><td>6117.1875</td></tr><tr><td>
+262</td><td>6140.625</td></tr><tr><td>
+263</td><td>6164.0625</td></tr><tr><td>
+264</td><td>6187.5</td></tr><tr><td>
+265</td><td>6210.9375</td></tr><tr><td>
+266</td><td>6234.375</td></tr><tr><td>
+267</td><td>6257.8125</td></tr><tr><td>
+268</td><td>6281.25</td></tr><tr><td>
+269</td><td>6304.6875</td></tr><tr><td>
+270</td><td>6328.125</td></tr><tr><td>
+271</td><td>6351.5625</td></tr><tr><td>
+272</td><td>6375</td></tr><tr><td>
+273</td><td>6398.4375</td></tr><tr><td>
+274</td><td>6421.875</td></tr><tr><td>
+275</td><td>6445.3125</td></tr><tr><td>
+276</td><td>6468.75</td></tr><tr><td>
+277</td><td>6492.1875</td></tr><tr><td>
+278</td><td>6515.625</td></tr><tr><td>
+279</td><td>6539.0625</td></tr><tr><td>
+280</td><td>6562.5</td></tr><tr><td>
+281</td><td>6585.9375</td></tr><tr><td>
+282</td><td>6609.375</td></tr><tr><td>
+283</td><td>6632.8125</td></tr><tr><td>
+284</td><td>6656.25</td></tr><tr><td>
+285</td><td>6679.6875</td></tr><tr><td>
+286</td><td>6703.125</td></tr><tr><td>
+287</td><td>6726.5625</td></tr><tr><td>
+288</td><td>6750</td></tr><tr><td>
+289</td><td>6773.4375</td></tr><tr><td>
+290</td><td>6796.875</td></tr><tr><td>
+291</td><td>6820.3125</td></tr><tr><td>
+292</td><td>6843.75</td></tr><tr><td>
+293</td><td>6867.1875</td></tr><tr><td>
+294</td><td>6890.625</td></tr><tr><td>
+295</td><td>6914.0625</td></tr><tr><td>
+296</td><td>6937.5</td></tr><tr><td>
+297</td><td>6960.9375</td></tr><tr><td>
+298</td><td>6984.375</td></tr><tr><td>
+299</td><td>7007.8125</td></tr><tr><td>
+300</td><td>7031.25</td></tr><tr><td>
+301</td><td>7054.6875</td></tr><tr><td>
+302</td><td>7078.125</td></tr><tr><td>
+303</td><td>7101.5625</td></tr><tr><td>
+304</td><td>7125</td></tr><tr><td>
+305</td><td>7148.4375</td></tr><tr><td>
+306</td><td>7171.875</td></tr><tr><td>
+307</td><td>7195.3125</td></tr><tr><td>
+308</td><td>7218.75</td></tr><tr><td>
+309</td><td>7242.1875</td></tr><tr><td>
+310</td><td>7265.625</td></tr><tr><td>
+311</td><td>7289.0625</td></tr><tr><td>
+312</td><td>7312.5</td></tr><tr><td>
+313</td><td>7335.9375</td></tr><tr><td>
+314</td><td>7359.375</td></tr><tr><td>
+315</td><td>7382.8125</td></tr><tr><td>
+316</td><td>7406.25</td></tr><tr><td>
+317</td><td>7429.6875</td></tr><tr><td>
+318</td><td>7453.125</td></tr><tr><td>
+319</td><td>7476.5625</td></tr><tr><td>
+320</td><td>7500</td></tr><tr><td>
+321</td><td>7523.4375</td></tr><tr><td>
+322</td><td>7546.875</td></tr><tr><td>
+323</td><td>7570.3125</td></tr><tr><td>
+324</td><td>7593.75</td></tr><tr><td>
+325</td><td>7617.1875</td></tr><tr><td>
+326</td><td>7640.625</td></tr><tr><td>
+327</td><td>7664.0625</td></tr><tr><td>
+328</td><td>7687.5</td></tr><tr><td>
+329</td><td>7710.9375</td></tr><tr><td>
+330</td><td>7734.375</td></tr><tr><td>
+331</td><td>7757.8125</td></tr><tr><td>
+332</td><td>7781.25</td></tr><tr><td>
+333</td><td>7804.6875</td></tr><tr><td>
+334</td><td>7828.125</td></tr><tr><td>
+335</td><td>7851.5625</td></tr><tr><td>
+336</td><td>7875</td></tr><tr><td>
+337</td><td>7898.4375</td></tr><tr><td>
+338</td><td>7921.875</td></tr><tr><td>
+339</td><td>7945.3125</td></tr><tr><td>
+340</td><td>7968.75</td></tr><tr><td>
+341</td><td>7992.1875</td></tr><tr><td>
+342</td><td>8015.625</td></tr><tr><td>
+343</td><td>8039.0625</td></tr><tr><td>
+344</td><td>8062.5</td></tr></table>
+
+</div>
+
+</div>
+     <!--  <script>
+           //Imptimir equivalencias de posición/frecuencia
+		var equivalencias = Array();
+		for ( var m = 0; m <= (1024); m++) {      
+			 var frecuencia = ((m*48000)/2048);
+			 equivalencias[m] = frecuencia;			
+			
+			}
+			
+		/*console.log(
+			equivalencias
+			//No se puede construir un afinador musical con esta resolución de transformada.
+			)
+				
+				document.write("<h3>Intervalos de frecuencia:</h3></br><p>En Hz</p>");
+
+				for (var c=0; c<equivalencias.length; c++)
+  			    document.write(c +"&nbsp;&nbsp;  "+equivalencias[c] + "<br>");
+            
+            
+            
+            </script>-->
+  
+   </div>
+
+      <div class="footer">
+        <p></p>
+      </div>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script src="http://getbootstrap.com/dist/js/bootstrap.min.js"></script>
+<script src="http://getbootstrap.com/assets/js/docs.min.js"></script>
+<script>
+ $(function(){
+       $('td').tooltip({container: 'body'});
+    });
+
+</script>
+</body>
+</html>
