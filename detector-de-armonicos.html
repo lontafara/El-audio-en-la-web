@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <title>Detector de Armónicos</title>
-<link href="http://getbootstrap.com/dist/css/bootstrap.css" rel="stylesheet">
+ <title>Estudio de la Web audio API. Oscilador</title>
+ <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+
+    <!-- Custom styles for this template -->
+    <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
+	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
 <style>
 .warning1{
 	background-color:#fffdf1;
@@ -216,7 +224,7 @@ function reproducirMic(stream) {
 								 pico = magnitud;
 								 valores.push(pico);
 								 posiciones.push(m);
-								 ctx.fillStyle = "rgb(25,255,0)";
+								 ctx.fillStyle = "rgb(225,225,225)";
                                  ctx.fillRect(m, margen, bar_width, altobarra);	 
 								 
 								 var pos = m;
@@ -225,7 +233,7 @@ function reproducirMic(stream) {
 								
 								 }else{
 									 
-									ctx.fillStyle = "rgb(0,0,0)"
+									ctx.fillStyle = "rgb(112,96,94)"
                 					ctx.fillRect(m, margen, bar_width, altobarra);
 									 
 									 }
@@ -686,7 +694,9 @@ function marca(posiciones){
 </head>
 
 <body onLoad="init();">
-<header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" >
+
+
+<div class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" >
   <div class="container">
     <div class="navbar-header">
       <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
@@ -703,20 +713,16 @@ function marca(posiciones){
             <li class="active"><a href="afinadorb.html" >Afinador experimental</a></li>
             <li><a href="comenzando.html">Ejemplos</a></li>
       </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li>
-          <a href="#">Sobre mí</a>
-        </li>
-      </ul>
+      
     </nav>
   </div>
-</header>
+</div>
 
 
 <div class="container">
-     
+     <div class="header">
         <h3 class="text-muted">Análisis armónico</h3>
-      
+     </div> 
 
       <div class="jumbotron">
          <canvas width="1024" height="200"></canvas>
@@ -753,7 +759,7 @@ function marca(posiciones){
            </div>
            <div class="col-md-7">
             <h3>El proceso de detección</h3>
-        <p>El principal problema de utilizar el <a href="espectro.html">Nodo Analizador</a> como elemento base en la detección de frecuencias, es la resolución en la parte baja del espectro. Nuesto ContextodeAudio utiliza una frecuencia de muestreo de 48000Hz, y ajustando el valor del tamaño de la Trasformada de Fourier a 2048, podemos crear vectores de 1024 muestras, que en este caso se cuantifican con 1Byte. En este contexto, podemos rastrear en nuestro array de datos la secuencia armónica de cada nota y crear un filtro comparador para aproximar un valor. Las desviaciones de frecuencia de la muestra tomada, respecto al valor armónico original, están categorizadas en 3 tipos (&plusmn;1Hz, &plusmn;5Hz y &plusmn;10Hz). a partir de las desviaciones de los cuatro primeros armónicos de cada cuerda, podemos aproximar una nota.  </p> 
+        <p>El principal problema de utilizar el <a href="espectro.html">Nodo Analizador</a> como elemento base en la detección de frecuencias, es la resolución en la parte baja del espectro. Nuesto ContextodeAudio utiliza una frecuencia de muestreo de 48000Hz, y ajustando el valor del tamaño de la Trasformada de Fourier a 2048, podemos crear vectores de 1024 muestras, que en este caso se cuantifican con 1Byte. En este contexto, podemos rastrear en nuestro array de datos la secuencia armónica de cada nota y crear un filtro comparador para aproximar un valor. Las desviaciones de frecuencia de la muestra tomada, respecto al valor armónico original, están categorizadas en 3 tipos (&plusmn;1Hz, &plusmn;5Hz y &plusmn;10Hz). a partir de las desviaciones de los cuatro primeros armónicos de cada cuerda, podemos aproximar una nota.  </p><p>En el display superior aparecen destacados los picos de frecuencia que superan el umbral de amplitud de 128. Este vector de picos es el que compararemos con un banco de notas. Por ejemplo un MI de la sexta cuerda se mostrará cuando los 3 picos de más amplitud, correspondan a las posiciones 7, 14 y 28.</p> 
  					
       </div>
 </div>
@@ -1007,7 +1013,9 @@ function marca(posiciones){
                     </tbody>
                 </table>
 </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
+       <h3>Precisión</h3>
+       La detección basada en la carga armónica tiene una precisión limitada, que en el mejor de los casos corresponderá a &frac14; de tono. Este ajuste se realiza con los armónicos superiores, donde la resolución de la trasformada nos permite distingir con más exactitud los intervalos de frecuencia. En la tabla de la izquierda aparecerán sombreadas las celdas de los armónicos detectados, y en caso de corresponder a una serie armónica determinada, se sombreará la cabecera con los códigos de las notas musicales.
        
 </div>
 
@@ -1038,7 +1046,7 @@ function marca(posiciones){
    </div>
 
       <div class="footer">
-        <p></p>
+         <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
       </div>
 <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
 <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>

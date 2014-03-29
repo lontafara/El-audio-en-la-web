@@ -52,12 +52,14 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">PFC. Web Audio API</a>
+          <a class="navbar-brand" href="#">El audio en la web</a>
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li><a href="index.html">Inicio</a></li>
-            <li><a href="#proyecto">Proyecto</a></li>
+            <li><a href="#" class="dropdown-toggle" data-toggle="dropdown">Afinador experimental<b class="caret"></b></a><ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+             <li><a href="afinadorb.html">Afinador</a></li>
+            <li><a href="detector-de-armonicos.html">Detección armónica</a></li></ul></li>
             <li class="active"><a href="comenzando.html">Ejemplos</a></li>
           </ul>
         </div><!-- /.nav-collapse -->
@@ -458,5 +460,13 @@ function potenciometro(slider) {
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="bootstrap/js/offcanvas.js"></script>
+    <script src="bootstrap/js/dropdown.js"></script>
+	<script>
+$(function(){
+       $('td').tooltip({container: 'body'});
+    });
+$(function(){
+	$('.dropdown-toggle').dropdown() });
+    </script>
   </body>
 </html>
