@@ -76,7 +76,7 @@
  
 //play desde micro
 function reproducirMic(stream) {
-	   
+	   		contextoDeAudio.sampleRate = 48000;
 	       var source = contextoDeAudio.createMediaStreamSource(stream);
             // crea analizador
 			analizador = contextoDeAudio.createAnalyser();
@@ -87,7 +87,7 @@ function reproducirMic(stream) {
         }  
       //establecemos la cadena de audio 
         function cadenaDeAudio(source) {
-
+			source.sampleRate=48000;
             misNodos.volume = contextoDeAudio.createGainNode();
 
  
@@ -1302,16 +1302,16 @@ function marca(posiciones){
 </div>
 
 </div>
-     <!--  <script>
+       <script>
            //Imptimir equivalencias de posición/frecuencia
 		var equivalencias = Array();
 		for ( var m = 0; m <= (1024); m++) {      
-			 var frecuencia = ((m*48000)/2048);
+			 var frecuencia = ((m*44100)/2048);
 			 equivalencias[m] = frecuencia;			
 			
 			}
 			
-		/*console.log(
+		console.log(
 			equivalencias
 			//No se puede construir un afinador musical con esta resolución de transformada.
 			)
@@ -1323,8 +1323,8 @@ function marca(posiciones){
             
             
             
-            </script>-->
-  
+            </script>
+ 
    </div>
 
       <div class="footer">
