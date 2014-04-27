@@ -57,7 +57,9 @@
             if('webkitAudioContext' in window) {
                contextoDeAudio = new webkitAudioContext();
             }
-        }
+        
+		prettyPrint();
+		}
  
  // CARGAMOS el archivo con petición asíncorna XMLHTTP
      function cargarSonido(url) {
@@ -876,7 +878,7 @@ function borra() {
            </div>
            <div class="col-md-7">
             <h3>El proceso de detección</h3>
-        <p>El principal problema de utilizar el <a href="espectro.html">Nodo Analizador</a> como elemento base en la detección de frecuencias, es la resolución en la parte baja del espectro. Nuesto ContextodeAudio utiliza una frecuencia de muestreo de 48000Hz, y ajustando el valor del tamaño de la Trasformada de Fourier a 2048, podemos crear vectores de 1024 muestras, que en este caso se cuantifican con 1Byte. En este contexto, podemos rastrear en nuestro array de datos la secuencia armónica de cada nota y crear un filtro comparador para aproximar un valor. Las desviaciones de frecuencia de la muestra tomada, respecto al valor armónico original, están categorizadas en 3 tipos (&plusmn;1Hz, &plusmn;5Hz y &plusmn;10Hz). a partir de las desviaciones de los cuatro primeros armónicos de cada cuerda, podemos aproximar una nota.</p> <p>En el display superior aparecen destacados los picos de frecuencia que superan el umbral de amplitud de 128. Este vector de picos es el que compararemos con un banco de notas. Por ejemplo un MI de la sexta cuerda se mostrará cuando los 3 picos de más amplitud, correspondan a las posiciones 8, 15 y 31.</p> <p>Las desviaciones de &frac14; de tono sobre la nota, las determinará los armónicos superiores, en este caso el que ocupa la posición 31, centrado en 667 Hz. La precisión aumentaría a un &frac16; de tono si añadiéramos el valor del siguiente armonico (61) y podría mejorar si añadiésemos el siguiente (122), pero son armónicos de poco nivel que se enmascaran rápido.  
+        <p>El principal problema de utilizar el <a href="espectro.html">Nodo Analizador</a> como elemento base en la detección de frecuencias, es la resolución en la parte baja del espectro. Nuesto ContextodeAudio utiliza una frecuencia de muestreo de 44100Hz, y ajustando el valor del tamaño de la Trasformada de Fourier a 2048, podemos crear vectores de 1024 muestras, que en este caso se cuantifican con 1Byte. En este contexto, podemos rastrear en nuestro array de datos la secuencia armónica de cada nota y crear un filtro comparador para aproximar un valor. Las desviaciones de frecuencia de la muestra tomada, respecto al valor armónico original, están categorizadas en 3 tipos (&plusmn;1Hz, &plusmn;5Hz y &plusmn;10Hz). a partir de las desviaciones de los cuatro primeros armónicos de cada cuerda, podemos aproximar una nota.</p> <p>En el display superior aparecen destacados los picos de frecuencia que superan el umbral de amplitud de 128. Este vector de picos es el que compararemos con un banco de notas. Por ejemplo un MI de la sexta cuerda se mostrará cuando los 3 picos de más amplitud, correspondan a las posiciones 8, 15 y 31.</p> <p>Las desviaciones de &frac14; de tono sobre la nota, las determinará los armónicos superiores, en este caso el que ocupa la posición 31, centrado en 667 Hz. La precisión aumentaría a un &frac16; de tono si añadiéramos el valor del siguiente armonico (61) y podría mejorar si añadiésemos el siguiente (122), pero son armónicos de poco nivel que se enmascaran rápido.  
  					
       </div>
 </div>
@@ -1269,15 +1271,75 @@ function borra() {
         </div>
     
       </div>
-        <div class="col-md-4">
+        <div class="col-md-12 col-lg-4">
        <h3>Precisión</h3>
        La detección basada en la carga armónica tiene una precisión limitada, sobre &frac14; de tono para la parte baja de la guitarra y &frac16; para las 3 primeras cuerdas. Este ajuste se realiza con los armónicos superiores, donde la resolución de la trasformada nos permite distingir con más exactitud los intervalos de frecuencia. En la tabla de la izquierda aparecerán sombreadas las celdas de los armónicos detectados, y en caso de corresponder a una serie armónica determinada, se sombreará la cabecera con los códigos de las notas musicales.
        
     
     <p>El tamaño de cada muestra es de <strong>21.53Hz</strong>, que es la máxima resolución del analizador. Esta resolución es insuficiente para medir pasos &lt;5Hz en la parte baja del espectro de la guitarra, pero si seguimos el rastro armónico de la nota en la tabla de frecuencia y comparamos este grupo de valores con los armónicos de cada nota podemos mostrar en pantalla un resultado bastante aproximado.</p>
-	</div>
+	<h3>Funcionamiento</h3>
+Una vez procesamos la petición <code>.webkitGetUserMedia</code> y la conectamos a un nodo analizador en nuestra cadena de audio, podemos trabajar con la salida del analizador, que nos devolverá bytes de enteros para las muestras de señal en el dominio de la frecuencia:   
+    <div class="highlight">
+         
+            <pre class="prettyprint"><code class="language-js">
+//Byte de enteros, array de 256 valores de amplitud
+var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
+analizador.getByteFrequencyData(ByteDatosFrec);
+    </code></pre></div>
+    
+    </div>
 </div>
+    <div class="row marketing">
+           <div class="col-lg-12">
+                Los algoritmos de detección y graficado de notas procesan los valores de este array de datos recuperando la salida del nodo analizador 20 veces por segundo. Los bloques principales del análisis son:
+               <div class="panel panel-default pull-left">
+  <div class="panel-heading">
+    <h3 class="panel-title">Bloques de procesado</h3>
+  </div>
+  <div class="panel-body">
+  <ul class="list-unstyled">
+  
+    <li><strong>Comparador:</strong> El algoritmo recorre sólo los bytes de datos superiores a un umbral, establecido en 128. El objeto es reducir la carga de procesamiento y eliminar el ruido de fondo.</li>
+                <li><strong>Detector de pico:</strong> la función detecta la posición y el valor de los picos de este array de datos, los cuales serán tratados como armónicos .</li>
+                <li><strong>Banco de armónicos:</strong> Se cruzan los datos obtenidos con un banco de armónicos por nota, en forma de arrays de 3, 4 ò 5 valores.</li>
+                <li><strong>Display de datos:</strong> Se representa el código de nota y una tabla para observar la permanencia de la serie armónica en el sonido.</li>  </div>
+</div> 
+                
+                
+            </div>
+    </div>
 
+
+
+  
+   </div>
+
+      <div class="footer">
+         <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
+      </div>
+      
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script src="http://getbootstrap.com/dist/js/bootstrap.min.js"></script>
+<script src="http://getbootstrap.com/assets/js/docs.min.js"></script>
+<script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
+<script>
+ $(function(){
+       $('td').tooltip({container: 'body'});
+    });
+
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-28916569-4', 'estegrafico.com');
+  ga('send', 'pageview');
+
+</script>
 
    <!--    <script>
            //Imptimir equivalencias de posición/frecuencia
@@ -1301,33 +1363,5 @@ function borra() {
             
             
             </script> -->
-  
-   </div>
-
-      <div class="footer">
-         <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
-      </div>
-      
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-<script src="http://getbootstrap.com/dist/js/bootstrap.min.js"></script>
-<script src="http://getbootstrap.com/assets/js/docs.min.js"></script>
-<script>
- $(function(){
-       $('td').tooltip({container: 'body'});
-    });
-
-</script>
-
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-28916569-4', 'estegrafico.com');
-  ga('send', 'pageview');
-
-</script>
 </body>
 </html>
