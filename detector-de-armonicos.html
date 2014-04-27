@@ -41,6 +41,7 @@
 	.nota_baja_ley{ background-color: #E43C3F;color:#ccc;}
     .nota_aprox_ley{ background-color: #EA191C; color:#FFFFFF;}
     .nota_alta_ley{ background-color: #8F3133;color:#ccc;}
+.volumen{display:none;}
 </style>
 <script>
         
@@ -127,14 +128,13 @@ function reproducirMic(stream) {
         function playSound() {
 			 contextoDeAudio = new webkitAudioContext();
                 // creamos los nodos
-				
-                analizador = contextoDeAudio.createAnalyser();
+			 analizador = contextoDeAudio.createAnalyser();
                 //analizador.smoothingTimeConstant = 0.85;
-				analizador.fftSize = 2048;
+			 analizador.fftSize = 2048;
                 
-				analizador.connect(contextoDeAudio.destination);
- 
-                cargarSonido("audios/Huajara.mp3");
+			 analizador.connect(contextoDeAudio.destination);
+
+            cargarSonido("audios/Huajara.mp3");
            
             var source = contextoDeAudio.createBufferSource();
             source.buffer = mibuffer;
@@ -143,6 +143,8 @@ function reproducirMic(stream) {
             // play justo ahora (0 seconds from now)
             // podemos pasar también contextoDeAudio.currentTime
             source.noteOn(0);
+			$('.volumen').css( 'display','block');
+			
             espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
             resolucion = setInterval(dibujaEspectro, 20); 
 			miFuente = source;
@@ -261,9 +263,9 @@ function reproducirMic(stream) {
 				var margen = ALTO - altobarra -1;
 				*/
 				
-				(document.querySelector(".valor")).innerHTML = maximo;
-				(document.querySelector(".picos")).innerHTML = valores;
-				(document.querySelector(".posicion")).innerHTML = posiciones;
+				(document.querySelector(".valor")).innerHTML = pico;
+				(document.querySelector(".picos")).innerHTML = valores.slice(0,8);
+				(document.querySelector(".posicion")).innerHTML = posiciones.slice(0,10);
 				(document.querySelector(".frecuencia")).innerHTML = frecuencia;
 					
 				
@@ -376,8 +378,8 @@ function reproducirMic(stream) {
 							frecuenciasordenadas[i] = parseInt((posicionesordenadas[i]*contextoDeAudio.sampleRate)/analizador.fftSize);
 							}
 						
-						(document.querySelector(".posicionord")).innerHTML = posicionesordenadas;
-						(document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas;
+						(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0,10);
+						(document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0,8);
 						//console.log(posicionesordenadas);
 						if(posiciones.length == 0){borra();}
 						
@@ -697,10 +699,19 @@ function dibujaEspectro(){
 				//dibujamos tipo hue ;)
 				var hue = i/datos_frecuencia.length * 360
 				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+                ctxe.fillRect(resolucion * i, alto-20, resolucion - 2, -magnitud + 40);
             		ctxe.fillStyle = "rgb(225,225,225)";
 					ctxe.font = "8pt Helvetica";
-					ctxe.fillText (i, resolucion * i, 10);
+					ctxe.fillText (i, resolucion * i, alto);
+					if (i==8){
+						ctxe.fillText ('Mi', resolucion * i, 10);
+						}
+					if (i==15){
+						ctxe.fillText ('Mi', resolucion * i, 10);
+						}
+					if (i==31){
+						ctxe.fillText ('Mi', resolucion * i, 10);
+						}
 			}
 	
 	}
@@ -716,6 +727,7 @@ function dibujaEspectro(){
 	  }
 	  //alert('esta');
 	  //marca(intervalosNota, posiciones);
+	  //marcaencanvas(intervalosNota, posiciones);
 	  return true;
 	  }
 
@@ -833,11 +845,10 @@ function borra() {
 
       <div class="row marketing">
         <div class="col-md-5">
-            <ul class="list-unstyled">
-              <li><input id="play" onclick="toggleSound(this)" type="button" value="Reproducir" class="btn btn-default"/></li>
-              <li><button class="btn btn-default" onclick="sonidoDirecto()">usar sonido de microfono</button></li>
-              </ul>
-              <div class="alert alert-info">
+            <div class="btn-group btn-group-lg">
+              <button id="play" onclick="toggleSound(this)" type="button"  class="btn  btn-default btn-info"> <span class="glyphicon glyphicon-play-circle"></span> Reproducir</button>&nbsp;<button class="btn btn-default btn-success" onclick="sonidoDirecto()"><span class=" glyphicon  glyphicon-upload "></span> Usar microfono<sup>*</sup></button>
+              </div><br /><sub>*Necesitas utilizar <a href="http://www.google.es/intl/es/chrome/browser/" target="_blank">Google Chrome</a></sub>
+              <div class="alert alert-info volumen">
               <ul class="list-unstyled">
               
               <li><span>Volumen:</span></li>
