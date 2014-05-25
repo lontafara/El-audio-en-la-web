@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Detector de Armónicos</title>
- <title>Estudio de la Web audio API. Oscilador</title>
+
  <!-- Bootstrap core CSS -->
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 	<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
@@ -42,1326 +42,1508 @@
     .nota_aprox_ley{ background-color: #EA191C; color:#FFFFFF;}
     .nota_alta_ley{ background-color: #8F3133;color:#ccc;}
 .volumen{display:none;}
+button sup { font-size:9px;}
+ #provisional{ position:absolute; color:#FFF}
 </style>
 <script>
-        
-        var contextoDeAudio, analizador, mibuffer, procesado,
-            miFuente,
-            misNodos = {},espectro, resolucion,
-            suena = false;
- 
- 		
- 
- 
-        function init() {
-            if('webkitAudioContext' in window) {
-               contextoDeAudio = new webkitAudioContext();
-            }
-        
-		prettyPrint();
-		}
- 
- // CARGAMOS el archivo con petición asíncorna XMLHTTP
-     function cargarSonido(url) {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
+var contextoDeAudio, analizador, mibuffer, procesado, miFuente, misNodos = {},
+    espectro, resolucion, tiempo, retardo =0, comienzo=0, suena = false, pausa=true;
 
-        // Cuando cargen los datos de audio:
-        request.responseType = 'arraybuffer';
-        request.addEventListener('load', bufferSound, false);
-        request.send();
-    
-	}
+function init() {
+    contextoDeAudio = new (window.AudioContext || window.webkitAudioContext || window.mozAudioContext ||window.oAudioContext || window.msAudioContext)();
+    prettyPrint();
+	textoEnMarco();//mostrará el texto en los marcos
+	var sw=0;// para mantener el alert de la frecuencia de muestreo
+	cargarSonido("audios/Huajara.mp3");
+}
+// CARGAMOS el archivo con petición asíncorna XMLHTTP
 
-
-     function bufferSound(event) {
-         var request = event.target;
-         var buffer = contextoDeAudio.createBuffer(request.response, false);
-         mibuffer = buffer;
+function cargarSonido(url) {
+    var peticion = new XMLHttpRequest();
+    peticion.open('GET', url, true);
+    // Cuando cargen los datos de audio:
+    peticion.responseType = 'arraybuffer';
+    //cuando cargue decodificamos los datos de audio y los introducimos como una PCM en la variable mi buffer
+    peticion.onload = function() {
+        contextoDeAudio.decodeAudioData(peticion.response, function(elbuffer) {
+            mibuffer = elbuffer;
+        });
     }
+    peticion.send();
+}
+
 //------USAMOS  MICrófono
-	function sonidoDirecto() {
+
+function sonidoDirecto() {
+	if (pausa==false){
+		misNodos.volume.disconnect();
+		 //añadir texto al marco!!
+		 textoEnMarco();
+		document.querySelector('#microfono').innerHTML = '&nbsp;Usar mic';
+	    $('#microfono').removeClass('glyphicon glyphicon-pause btn-warning');
+       $('#microfono').addClass('glyphicon glyphicon-user btn-success');
+	   pausa= true;
+		}else{
+	   tomarEntradaMic({audio:true}, al_aire);
+		}
+}
+
+function error() {
+    alert('Stream generation failed.');
+}
+
+function error() {
+    alert('Falló la generación de la cadena de Audio. Utilizas chrome o Safari?');
+}
+
+function tomarEntradaMic(medio, llamada) {
+    try {
+		navigator.getMedia = ( navigator.getUserMedia ||
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia);
+
+        navigator.getMedia(medio, llamada, error);
+    } catch (e) {
+        alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
+    }
+}
+
+function al_aire(entrada) {
+    var fuente = contextoDeAudio.createMediaStreamSource(entrada);
+    // crea analizador
+    analizador = contextoDeAudio.createAnalyser();
+    analizador.fftSize = 2048;
+    cadenaDeAudio(fuente);
+    requestAnimationFrame(analisis.bind(this))
+	resolucion = setInterval(dibujaEspectro, 20);
+	tiempo = setInterval(dibujarOnda, 20);
+	miFuente = fuente;
+	
+	//Estado del texto en el marco
+	var parrafo = document.getElementById("provisional");
+    parrafo.parentNode.removeChild(parrafo);
+	document.querySelector('#microfono').innerHTML = '&nbsp;Pausar mic';
+	$('#microfono').removeClass('glyphicon glyphicon-user btn-success');
+    $('#microfono').addClass('glyphicon glyphicon-pause btn-warning');
+	pausa= false;
+	
+}
+//establecemos la cadena de audio 
+
+function cadenaDeAudio(fuente) {
+    misNodos.volume = contextoDeAudio.createGainNode();
+    var volume = document.querySelector('#volume').value;
+    misNodos.volume.gain.value = volume;
+    // Ruta de audio conexiones
+    fuente.connect(misNodos.volume);
+    misNodos.volume.connect(analizador);
+    return fuente;
+}
+
+function reproducirSonido() {
+	
+	if (suena) {
+		 // Stop
+        var fuente = miFuente;
+        fuente.noteOff(0);
+        retardo += contextoDeAudio.currentTime - this.comienzo;
+        console.log('Pausado en', retardo);
+        // Grabar posición donde se pausó.
+        document.querySelector('#play').innerHTML = '&nbsp;Reproducir';
+		 
+		 $('#play').removeClass('glyphicon glyphicon-pause btn-default');
+		 $('#play').addClass('glyphicon glyphicon-play btn-info');
+         
+		 //añadir texto al marco!!
+		 textoEnMarco();
 		
-    	getUserMedia({audio:true}, reproducirMic);
-	}
-	function error() {
-		alert('Stream generation failed.');
-	}
-	function getUserMedia(tipo, llamada) {
-    	try {
-        	navigator.webkitGetUserMedia(tipo, llamada, error);
-   	    } catch (e) {
-        	alert('webkitGetUserMedia excepción :' + e);
-        }
-   }	 
- 
-//play desde micro
-function reproducirMic(stream) {
-	   
-	       var source = contextoDeAudio.createMediaStreamSource(stream);
-            // crea analizador
+	} else {
+			comienzo = contextoDeAudio.currentTime;
+			// creamos los nodos
 			analizador = contextoDeAudio.createAnalyser();
-			analizador.fftSize = 2048;            
-            cadenaDeAudio(source);
-            espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
-            resolucion = setInterval(dibujaEspectro, 20);  
-			miFuente = source;
-        }  
-      //establecemos la cadena de audio 
-        function cadenaDeAudio(source) {
+			//analizador.smoothingTimeConstant = 0.85;
+			analizador.fftSize = 2048;
+			analizador.connect(contextoDeAudio.destination);
+			
+			var fuente = contextoDeAudio.createBufferSource();
+			fuente.buffer = mibuffer;
+			fuente.loop = true;
+			fuente = cadenaDeAudio(fuente);
+			
+			// podemos pasar también contextoDeAudio.currentTime
+			fuente.start(0, retardo % fuente.buffer.duration);
+			//Estado del botón
+			document.querySelector('#play').innerHTML = '&nbsp;Pausar';
+			$('#play').removeClass('glyphicon glyphicon-play btn-info');
+		    $('#play').addClass('glyphicon glyphicon-pause btn-default');
+		 	//Estado del texto en el marco
+			var parrafo = document.getElementById("provisional");
+           parrafo.parentNode.removeChild(parrafo);
+		   
+			$('.volumen').css('display', 'block');
+			requestAnimationFrame(analisis.bind(this))
+			//espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
+			resolucion = setInterval(dibujaEspectro, 20);
+			 tiempo = setInterval(dibujarOnda, 20);
+			suena == true;
+			miFuente = fuente;
 
-            misNodos.volume = contextoDeAudio.createGainNode();
+	}
+	this.suena = !this.suena;
 
- 
-    
-            var volume = document.querySelector('#volume').value;
- 
-           
-            misNodos.volume.gain.value = volume;
- 
-            // Ruta de audio conexiones
-           
-            source.connect(misNodos.volume);
-            misNodos.volume.connect(analizador);
- 
-            return source;
-        }
- 		
-        function playSound() {
-			 contextoDeAudio = new webkitAudioContext();
-                // creamos los nodos
-			 analizador = contextoDeAudio.createAnalyser();
-                //analizador.smoothingTimeConstant = 0.85;
-			 analizador.fftSize = 2048;
-                
-			 analizador.connect(contextoDeAudio.destination);
+}
 
-            cargarSonido("audios/Huajara.mp3");
-           
-            var source = contextoDeAudio.createBufferSource();
-            source.buffer = mibuffer;
-            source.loop = true;
-            source = cadenaDeAudio(source);
-            // play justo ahora (0 seconds from now)
-            // podemos pasar también contextoDeAudio.currentTime
-            source.noteOn(0);
-			$('.volumen').css( 'display','block');
-			
-            espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
-            resolucion = setInterval(dibujaEspectro, 20); 
-			miFuente = source;
-        }
- 
-        function pauseSound() {
-            var source = miFuente;
-            source.noteOff(0);
-            clearInterval(espectro);
-        }
- 
-        function toggleSound(button) {
-            if(!suena) {
-                playSound();
-                button.value = "Parar Sonido";
-                suena = true;
-            }
-            else {
-                pauseSound();
-                button.value = "Reproducir";
-                suena = false;
-            }
-        }
- 
-        function drawSpectrum() {
-           var canvas =  document.getElementById('principal');
-            var ctx = canvas.getContext('2d');
-            ANCHO=1024;
-			ALTO=256;
-			canvas.width = ANCHO;
-            canvas.height = ALTO;
-            var bar_width = 1;
- 
-            ctx.clearRect(0, 0, ANCHO, ALTO);
-			//dibujo línea comparador
-			dibujarlineacomparador( ctx, 0, ANCHO, 128);
-			dibujarescala(ctx, ALTO,ANCHO);
-			
- 			//-----Byte de enteros, array de 256 valores de amplitud
-            var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
-            analizador.getByteFrequencyData(ByteDatosFrec);
-			
-			//---- VISUALIZAMOS ALGUNAS VARIABLES
-			//console.log(ByteDatosFrec);
-			
-			var nyquist = contextoDeAudio.sampleRate/2;
-			//console.log(nyquist);
-			(document.querySelector(".nyquist")).innerHTML= nyquist;
-            (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
-			(document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
-			(document.querySelector(".fftsize")).innerHTML = analizador.fftSize;
+function parar() {
+    var fuente = miFuente;
+    fuente.noteOff(0);
+    clearInterval(espectro);
+}
 
-			//--------------
-			
-			var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
-            var maximo = ByteDatosFrec[0];
-			var pico = ByteDatosFrec[0];
-			var valores = new Array();
-			var posiciones = new Array();
-			var valorespico = new Array();
-			var posicionespico = new Array();
-			//var posicionesordenadas = new Array();
-			//var valoresordenados = new Array();
-			//for (var i = 0; i < NumerodeBarras; i++) {
-			
-			//calculo directo del máximo	
-			/*
+
+
+function analisis() {
+    var canvas = document.getElementById('principal');
+    var ctx = canvas.getContext('2d');
+    ANCHO = document.getElementById('marcofull').offsetWidth -80;
+
+    ALTO = 256;
+    canvas.width = ANCHO;
+    canvas.height = ALTO;
+    var bar_width = 1;
+    ctx.clearRect(0, 0, ANCHO, ALTO);
+    //dibujo línea comparador
+    dibujarlineacomparador(ctx, 0, ANCHO, 128);
+    dibujarescala(ctx, ALTO, ANCHO);
+    //-----Byte de enteros, array de 256 valores de amplitud
+    var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
+    analizador.getByteFrequencyData(ByteDatosFrec);
+    //---- VISUALIZAMOS ALGUNAS VARIABLES
+    //console.log(ByteDatosFrec);
+    var nyquist = contextoDeAudio.sampleRate / 2;
+    //console.log(nyquist);
+    (document.querySelector(".nyquist")).innerHTML = nyquist;
+    (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
+    (document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
+    (document.querySelector(".fftsize")).innerHTML = analizador.fftSize;
+    //--------------
+    var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
+    var maximo = ByteDatosFrec[0];
+    var pico = ByteDatosFrec[0];
+    var valores = new Array();
+    var posiciones = new Array();
+    var valorespico = new Array();
+    var posicionespico = new Array();
+    //var posicionesordenadas = new Array();
+    //var valoresordenados = new Array();
+    //for (var i = 0; i < NumerodeBarras; i++) {
+    //calculo directo del máximo	
+/*
 			var losmayores = new Array();
 			losmayores = Math.max.apply( Math, ByteDatosFrec );
 			console.log(
 			losmayores
 			)	
 			*/
-			
-							
-				
-				
-                
-				//Comparo valores mayores que el umbral
-				
-				for (var m = 0; m <= (ByteDatosFrec.length); m++) {
-					       	  var magnitud = ByteDatosFrec[m];
-							  var siguiente = ByteDatosFrec[m+1];
-							  var anterior = ByteDatosFrec[m-1];
-							  //variables dibujo
-								  
-                					var porcentaje = magnitud / 256;
-									var altobarra = ALTO * porcentaje;
-									var margen = ALTO - altobarra -1;
-							  if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)){
-									 
-								 pico = magnitud;
-								 valores.push(pico);
-								 posiciones.push(m);
-								 ctx.fillStyle = "rgb(225,225,225)";
-                                 ctx.fillRect(m, margen, bar_width, altobarra);	 
-								 
-								 var pos = m;
-								 var frecuencia = ((pos*contextoDeAudio.sampleRate)/analizador.fftSize);
-					
-								
-								 }else{
-									 
-									ctx.fillStyle = "rgb(112,96,94)"
-                					ctx.fillRect(m, margen, bar_width, altobarra);
-									 
-									 }
-								  
-								  
-								   
-							
-							//termina para los mayores de 100
-							// Ajustar valores en el canvas
-				/*var porcentaje = valor / 256;
+    //Comparo valores mayores que el umbral
+    for (var m = 0; m <= (ByteDatosFrec.length); m++) {
+        var magnitud = ByteDatosFrec[m];
+        var siguiente = ByteDatosFrec[m + 1];
+        var anterior = ByteDatosFrec[m - 1];
+        //variables dibujo
+        var porcentaje = magnitud / 256;
+        var altobarra = ALTO * porcentaje;
+        var margen = ALTO - altobarra - 1;
+        if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
+            pico = magnitud;
+            valores.push(pico);
+            posiciones.push(m);
+            ctx.fillStyle = "rgb(225,225,225)";
+            ctx.fillRect(m, margen, bar_width, altobarra);
+            var pos = m;
+            var frecuencia = ((pos * contextoDeAudio.sampleRate) / analizador.fftSize);
+        } else {
+            ctx.fillStyle = "rgb(112,96,94)"
+            ctx.fillRect(m, margen, bar_width, altobarra);
+        }
+        //termina para los mayores de 100
+        // Ajustar valores en el canvas
+/*var porcentaje = valor / 256;
 				var altobarra = ALTO * porcentaje;
 				var margen = ALTO - altobarra -1;
 				*/
-				
-				(document.querySelector(".valor")).innerHTML = pico;
-				(document.querySelector(".picos")).innerHTML = valores.slice(0,8);
-				(document.querySelector(".posicion")).innerHTML = posiciones.slice(0,10);
-				(document.querySelector(".frecuencia")).innerHTML = frecuencia;
-					
-				
-				//CORRESPONDENCIA DE NOTAS     
-                
-                  // C
-			
-				var C6 =[6,12,24];
-					var C6a = [6,12,25];
-					var C6b = [6,12,24];
-					
-				// C#
-				  var Cs6 = [13,19,26];
-				  	var Cs6a = [13,19,27];
-					var Cs6b = [13,19,25];
-					
-				// D	
-				var D6 = [7,14,27];	
-					var D6a = [7,14,28];
-					var D6b = [7,14,26];
-				var D4 = [7,14,27,55];	 
-					var D4a = [7,14,27,56];
-					var D4b = [7,14,27,54];
-				// Eb
-				var Eb= [7,14,29]
-					var Eba= [7,15,29];
-					var Ebaa= [7,14,30];
-					var Ebaaa= [7,15,30];
-					var Ebb= [7,14,28];
-					var Ebbb= [7,13,28]
-				
-				// E
-				var E6 =[8,15,31];
-					var E6a =[8,15,32];
-					var E6b =[8,15,30];	
-				var E1 =[15,31,61];
-					var E1a =[15,31,62];
-					var E1aa =[15,32,62];
-					var E1b =[15,31,60];
-					var E1bb =[15,30,60];
-				// F
-				var F6 =[8,16,32];					
-					var F6b =[8,16,31];
-					var F6a =[8,16,33];
-				var F3 =[16,32,65]
-					var F3b =[16,32,64];
-					var F3a =[16,32,66];
-				// F#
-				var Fs =[9,17,34];
-					var Fsa =[9,17,35];
-					var Fsaa =[9,17,36];
-					var Fsb =[9,17,33];
-					var Fsbb =[8,17,33];
-				//G
-				var G =[5,9,18,36];
-					var Ga =[5,9,18,37];
-					var Gaa =[9,18,37];
-					var Gb=[5,9,18,35];
-					var Gbb = [9,18,35];
-				//G#
-				var Gs = [5,10,19,39];
-					var Gsa =[5,10,19,40];
-					var Gsaa =[10,20,39];
-					var Gsb=[5,10,19,38];
-					var Gsbb = [10,18,38];
-				//A
-				var A5=[5,10,20,41];
-					var A5b=[5,10,20,40];
-					var A5bb=[5,10,20,39];
-					var A5a=[5,10,20,42];
-					var A5aa=[5,10,21,42];
-				var A2 =[10,20,41];
-				//Bb
-				var Bb=[5,11,22,43];
-					var BBb=[11,21,43];
-					var Bbbb=[11,21,42];
-					var Bba=[5,11,22,44];
-					var Bbaa=[11,22,43];
-				var B2 =[11,22,43];	
-				//B
-				var B = [11,23,46];
-					 var Ba=[11,23,47];
-					 var Baa=[11,24,47];
-					 var Bb=[11,23,45];
-					 var Bbb=[11,22,45];   
-         // 
-				//Compruebo cuando he completado un ciclo de muestras 
-					if(m == ByteDatosFrec.length){
-						
-						//---- ordeno los armónicos de mayor nivel, para optimizar el comparador
-					
-						var valoresordenados = new Array() ;
-						var posicionesordenadas = new Array();
-						var frecuenciasordenadas = new Array();
-
-					var objeto = new Array();
-						for (i=0; i<= valores.length;i++){
-							
-						
-								objeto[i]= new  Array(2); 
-								objeto[i][0]= valores[i];
-								objeto[i][1] = posiciones[i];
-							
-						}
-						objeto.sort(function(a,b){return b[0] - a[0] ;});
-						
-						for (i=0; i< posiciones.length;i++){
-							valoresordenados[i] = objeto[i][0];
-							posicionesordenadas[i] = objeto[i][1];
-							frecuenciasordenadas[i] = parseInt((posicionesordenadas[i]*contextoDeAudio.sampleRate)/analizador.fftSize);
-							}
-						
-						(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0,10);
-						(document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0,8);
-						//console.log(posicionesordenadas);
-						if(posiciones.length == 0){borra();}
-						
-					//console.log('posiciones: '+posiciones)
-					//console.log('valores: '+valores)
-					(document.querySelector(".nota")).innerHTML = '--';
-						if (posiciones){
-							(document.querySelector(".nota")).innerHTML = '?';
-							 marca(posiciones);
-							//borra();
-							//comprobar todas las notas
-							//Notas--------
-			//comprobar todas las notas
-							
-							//C
-							if(comprobar(C6, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'C';
-									(document.querySelector("#C")).className = 'nota_aprox';
-								}
-								if(comprobar(C6a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'C+';
-									(document.querySelector("#C")).className = 'nota_alta';
-								}
-								if(comprobar(C6b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-C';
-									(document.querySelector("#C")).className = 'nota_baja';
-								}
-							//C#
-							if(comprobar(Cs6, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'C#';
-									(document.querySelector("#Cs")).className = 'nota_aprox';
-								}
-								if(comprobar(Cs6a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'C#+';
-									(document.querySelector("#Cs")).className = 'nota_alta';
-								}
-								if(comprobar(Cs6b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-C#';
-									(document.querySelector("#Cs")).className = 'nota_baja';
-								}
-							//D
-							if(comprobar(D6, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'D';
-									(document.querySelector("#D")).className = 'nota_aprox';
-								}
-								if(comprobar(D6a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'D+';
-									(document.querySelector("#D")).className = 'nota_alta';
-								}
-								if(comprobar(D6b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-D';
-									(document.querySelector("#D")).className = 'nota_baja';
-								}	
-							if(comprobar(D4, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'D';
-									(document.querySelector("#D")).className = 'nota_aprox';
-								}
-								if(comprobar(D4a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'D+';
-									(document.querySelector("#D")).className = 'nota_alta';
-								}
-								if(comprobar(D4b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-D';
-									(document.querySelector("#D")).className = 'nota_baja';
-								}
-							//Eb
-							if(comprobar(Eb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Eb';
-									(document.querySelector("#Eb")).className = 'nota_aprox';
-								}
-								if(comprobar(Eba, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Eb+';
-									(document.querySelector("#Eb")).className = 'nota_alta';
-								}
-								if(comprobar(Ebaa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Eb+';
-									(document.querySelector("#Eb")).className = 'nota_alta';
-								}
-								if(comprobar(Ebb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-Eb';
-									(document.querySelector("#Eb")).className = 'nota_baja';
-								}
-								if(comprobar(Ebbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-Eb';
-									(document.querySelector("#Eb")).className = 'nota_baja';
-								}
-							//E
-							if(comprobar(E6, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'E';
-									(document.querySelector("#E")).className = 'nota_aprox';
-								}
-								if(comprobar(E6a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'E+';
-									(document.querySelector("#E")).className = 'nota_alta';
-								}
-								if(comprobar(E6b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-E';
-									(document.querySelector("#E")).className = 'nota_baja';
-								}
-							if(comprobar(E1, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'E';
-									(document.querySelector("#E")).className = 'nota_aprox';
-								}
-								if(comprobar(E1a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'E+';
-									(document.querySelector("#E")).className = 'nota_alta';
-								}
-								if(comprobar(E1aa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'E+';
-									(document.querySelector("#E")).className = 'nota_alta';
-								}
-								if(comprobar(E1b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-E';
-									(document.querySelector("#E")).className = 'nota_baja';
-								}
-								if(comprobar(E1bb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-E';
-									(document.querySelector("#E")).className = 'nota_baja';
-								}
-							//F
-							if(comprobar(F6, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F';
-									(document.querySelector("#F")).className = 'nota_aprox';
-								}
-								if(comprobar(F6a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F+';
-									(document.querySelector("#F")).className = 'nota_alta';
-								}
-								if(comprobar(F6b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-F';
-									(document.querySelector("#F")).className = 'nota_baja';
-								}
-							if(comprobar(F3, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F';
-									(document.querySelector("#F")).className = 'nota_aprox';
-								}
-								if(comprobar(F3a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F+';
-									(document.querySelector("#F")).className = 'nota_alta';
-								}
-								if(comprobar(F3b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-F';
-									(document.querySelector("#F")).className = 'nota_baja';
-								}	
-							//F#
-							if(comprobar(Fs, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F#';
-									(document.querySelector("#Fs")).className = 'nota_aprox';
-								}
-								if(comprobar(Fsa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F#+';
-									(document.querySelector("#Fs")).className = 'nota_alta';
-								}
-								if(comprobar(Fsaa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'F#+';
-									(document.querySelector("#Fs")).className = 'nota_alta';
-								}
-								if(comprobar(Fsb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-F#';
-									(document.querySelector("#Fs")).className = 'nota_baja';
-								}
-								if(comprobar(Fsbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-F#';
-									(document.querySelector("#Fs")).className = 'nota_baja';
-								}
-						    //G
-							if(comprobar(G, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G';
-									(document.querySelector("#G")).className = 'nota_aprox';
-								}
-								if(comprobar(Ga, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G+';
-									(document.querySelector("#G")).className = 'nota_alta';
-								}
-								if(comprobar(Gaa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G+';
-									(document.querySelector("#G")).className = 'nota_alta';
-								}
-								if(comprobar(Gb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-G';
-									(document.querySelector("#G")).className = 'nota_baja';
-								}
-								if(comprobar(Gbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-G';
-									(document.querySelector("#G")).className = 'nota_baja';
-								}
-							//G#
-							if(comprobar(Gs, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G#';
-									(document.querySelector("#Gs")).className = 'nota_aprox';
-								}
-								if(comprobar(Gsa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G#+';
-									(document.querySelector("#Gs")).className = 'nota_alta';
-								}
-								if(comprobar(Gsaa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'G#+';
-									(document.querySelector("#Gs")).className = 'nota_alta';
-								}
-								if(comprobar(Gsb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-G#';
-									(document.querySelector("#Gs")).className = 'nota_baja';
-								}
-								if(comprobar(Gsbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-G#';
-									(document.querySelector("#Gs")).className = 'nota_baja';
-								}
-							//A
-							if(comprobar(A5, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'A';
-									(document.querySelector("#A")).className = 'nota_aprox';
-								}
-								if(comprobar(A5a, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'A+';
-									(document.querySelector("#A")).className = 'nota_alta';
-								}
-								if(comprobar(A5aa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'A+';
-									(document.querySelector("#A")).className = 'nota_alta';
-								}
-								if(comprobar(A5b, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-A';
-									(document.querySelector("#A")).className = 'nota_baja';
-								}
-								if(comprobar(A5bb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-A';
-									(document.querySelector("#A")).className = 'nota_baja';
-								}	
-							if(comprobar(A2, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'A';
-									(document.querySelector("#A")).className = 'nota_aprox';
-								}
-							//Bb
-							if(comprobar(Bb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Bb';
-									(document.querySelector("#Bb")).className = 'nota_aprox';
-								}
-								if(comprobar(Bba, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Bb+';
-									(document.querySelector("#Bb")).className = 'nota_alta';
-								}
-								if(comprobar(Bbaa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Bb+';
-									(document.querySelector("#Bb")).className = 'nota_alta';
-								}
-								if(comprobar(BBb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-Bb';
-									(document.querySelector("#Bb")).className = 'nota_baja';
-								}
-								if(comprobar(Bbbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-Bb';
-									(document.querySelector("#Bb")).className = 'nota_baja';
-								}	
-							if(comprobar(B2, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'Bb';
-									(document.querySelector("#Bb")).className = 'nota_aprox';
-								}
-						//B
-						if(comprobar(B, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'B';
-									(document.querySelector("#B")).className = 'nota_aprox';
-								}
-								if(comprobar(Ba, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'B+';
-									(document.querySelector("#B")).className = 'nota_alta';
-								}
-								if(comprobar(Baa, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = 'B+';
-									(document.querySelector("#B")).className = 'nota_alta';
-								}
-								if(comprobar(Bb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-B';
-									(document.querySelector("#B")).className = 'nota_baja';
-								}
-								if(comprobar(Bbb, posiciones)===true){
-									(document.querySelector(".nota")).innerHTML = '-B';
-									(document.querySelector("#B")).className = 'nota_baja';
-								}
-							
-						}
-					
-					}
-								
-	
-				}// fin bucle para valores mayores que el umbral
-				
-				
-				
-				
-				
-}// fin dibujar espectro canvas principal y análisis
-
-function dibujaEspectro(){
-	//dibujamos el espectro de resolución
-		var espectro = document.querySelector('#canvasresolucion');
-        var ctxe = espectro.getContext('2d');
-        var ancho = document.getElementById('marco').offsetWidth -80;
-		espectro.width= ancho;
-        espectro.height= 200;
-        var alto=200;
-		var ancho_barra;
-		var resolucion = 18;	
+        (document.querySelector(".valor")).innerHTML = pico;
+        (document.querySelector(".picos")).innerHTML = valores.slice(0, 8);
+        (document.querySelector(".posicion")).innerHTML = posiciones.slice(0, 10);
+        (document.querySelector(".frecuencia")).innerHTML = frecuencia;
+        //CORRESPONDENCIA DE NOTAS     
+       	//Notas en función de la frecuencia de muestreo del dispositivo de entrada 
 		
-	
-		
-		ctxe.clearRect(0, 0, ancho, alto);
-		
-			
-		var datos_frecuencia = new Uint8Array(analizador.frequencyBinCount);
-            analizador.getByteFrequencyData(datos_frecuencia);
-			
-			var NumerodeBarras = Math.round(ancho / resolucion);
-            for (var i = 0; i < NumerodeBarras; i++) {
-				//for (var i = 0; i < (datos_frecuencia.length); i++) {
-                var magnitud = datos_frecuencia[i];
-                // ajustamos las variables para dibujarlas en el canvas
-				//dibujamos tipo hue ;)
-				var hue = i/datos_frecuencia.length * 360
-				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-                ctxe.fillRect(resolucion * i, alto-20, resolucion - 2, -magnitud + 40);
-            		ctxe.fillStyle = "rgb(225,225,225)";
-					ctxe.font = "8pt Helvetica";
-					ctxe.fillText (i, resolucion * i, alto);
-					if (i==8){
-						ctxe.fillText ('Mi', resolucion * i, 10);
-						}
-					if (i==15){
-						ctxe.fillText ('Mi', resolucion * i, 10);
-						}
-					if (i==31){
-						ctxe.fillText ('Mi', resolucion * i, 10);
-						}
+		if (contextoDeAudio.sampleRate =='44100'){
+		// C
+        var C6 = [6, 12, 24];
+        var C6a = [6, 12, 25];
+        var C6b = [6, 12, 24];
+        // C#
+        var Cs6 = [13, 19, 26];
+        var Cs6a = [13, 19, 27];
+        var Cs6b = [13, 19, 25];
+        // D	
+        var D6 = [7, 14, 27];
+        var D6a = [7, 14, 28];
+        var D6b = [7, 14, 26];
+        var D4 = [7, 14, 27, 55];
+        var D4a = [7, 14, 27, 56];
+        var D4b = [7, 14, 27, 54];
+        // Eb
+        var Eb = [7, 14, 29]
+        var Eba = [7, 15, 29];
+        var Ebaa = [7, 14, 30];
+        var Ebaaa = [7, 15, 30];
+        var Ebb = [7, 14, 28];
+        var Ebbb = [7, 13, 28]
+        // E
+        var E6 = [8, 15, 31];
+        var E6a = [8, 15, 32];
+        var E6b = [8, 15, 30];
+        var E1 = [15, 31, 61];
+        var E1a = [15, 31, 62];
+        var E1aa = [15, 32, 62];
+        var E1b = [15, 31, 60];
+        var E1bb = [15, 30, 60];
+        // F
+        var F6 = [8, 16, 32];
+        var F6b = [8, 16, 31];
+        var F6a = [8, 16, 33];
+        var F3 = [16, 32, 65]
+        var F3b = [16, 32, 64];
+        var F3a = [16, 32, 66];
+        // F#
+        var Fs = [9, 17, 34];
+        var Fsa = [9, 17, 35];
+        var Fsaa = [9, 17, 36];
+        var Fsb = [9, 17, 33];
+        var Fsbb = [8, 17, 33];
+        //G
+        var G = [5, 9, 18, 36];
+        var Ga = [5, 9, 18, 37];
+        var Gaa = [9, 18, 37];
+        var Gb = [5, 9, 18, 35];
+        var Gbb = [9, 18, 35];
+        //G#
+        var Gs = [5, 10, 19, 39];
+        var Gsa = [5, 10, 19, 40];
+        var Gsaa = [10, 20, 39];
+        var Gsb = [5, 10, 19, 38];
+        var Gsbb = [10, 18, 38];
+        //A
+        var A5 = [5, 10, 20, 41];
+        var A5b = [5, 10, 20, 40];
+        var A5bb = [5, 10, 20, 39];
+        var A5a = [5, 10, 20, 42];
+        var A5aa = [5, 10, 21, 42];
+        var A2 = [10, 20, 41];
+        //Bb
+        var Bb = [5, 11, 22, 43];
+        var BBb = [11, 21, 43];
+        var Bbbb = [11, 21, 42];
+        var Bba = [5, 11, 22, 44];
+        var Bbaa = [11, 22, 43];
+        var B2 = [11, 22, 43];
+        //B
+        var B = [11, 23, 46];
+        var Ba = [11, 23, 47];
+        var Baa = [11, 24, 47];
+        var Bb = [11, 23, 45];
+        var Bbb = [11, 22, 45];
+        //
+		}else if (contextoDeAudio.sampleRate=='48000' && sw==0){
+			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
+			sw=1;
 			}
-	
-	}
-
-		
-	//Check notas/porciones de fecuencia
-	function comprobar(intervalosNota, posiciones){ 
-	 
-	  for (var i = 0; i < (intervalosNota.length); i++){
-		  var a = posiciones.indexOf(intervalosNota[i]);
-		 if( a == -1) 
-		 {return false;}
-	  }
-	  //alert('esta');
-	  //marca(intervalosNota, posiciones);
-	  //marcaencanvas(intervalosNota, posiciones);
-	  return true;
-	  }
-
-function marca(posiciones){
-	
-	 for (var i = 0; i < (posiciones.length); i++){
-	//$("#" + intervalosNota[i]).html(intervalosNota[i]) ;
-	//console.log(intervalosNota[i]);
-	 if($("#" + posiciones[i]) || $("."+posiciones[i])){
-		if($("#" + posiciones[i]).hasClass('aprox')){
-			$("#" + posiciones[i]).addClass('warning')
-			}
-		if($("." + posiciones[i]).hasClass('aprox1'))
-			{
-			$("." + posiciones[i]).addClass('warning1')
-		}else{
-		$("#" + posiciones[i]).addClass('success');
-			}
-	 
-	 
-	 }
-	
-	 }
-
-
-}
- 
-	
-function borra() {
-     $("*").removeClass('success');
-     $("*").removeClass('nota_aprox');
-     $("*").removeClass('warning');
-     $("*").removeClass('warning1');
-     $("*").removeClass('nota_alta');
-	 $("*").removeClass('nota_baja');
- }				
-        //}
-		// línea comparador---------
-		function dibujarlineacomparador(c, x1, x2, y) {
-		c.lineWidth = 1;
-		var adaptedY = Math.floor(y)+0.5;
-		c.beginPath();
-		c.moveTo(x1, 128);
-		c.lineTo(x2, 128);
-		c.stroke();
-		}
-	    //Escala 256 valores
-		function dibujarescala(c, ALTO, ANCHO){
-			c.font = "8pt Helvetica";
-			var count =  0;
-			var paso =50;
-			var margen=5;
-			var colHead = 0;
-			var rowHead = 0;
-			yScalar = (ALTO - colHead - margen) / (ALTO);
-			for (i=ALTO; i>=0; i -=paso){
-				y = colHead + (yScalar * count * paso);
-				c.fillText (i, margen, y + margen )
-				c.moveTo(rowHead, y)
-				c.lineTo(ANCHO, y)
-					count++;
-				}
-			
-			
-		}
 		
 		
-        function sliderChange(slider) {
-            if(contextoDeAudio.activeSourceCount > 0) {
-                 if(slider.id == 'volume') {
-                    var volume = slider.value;
-                    misNodos.volume.gain.value = volume;
+        //Compruebo cuando he completado un ciclo de muestras 
+        if (m == ByteDatosFrec.length) {
+            //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
+            var valoresordenados = new Array();
+            var posicionesordenadas = new Array();
+            var frecuenciasordenadas = new Array();
+            var objeto = new Array();
+            for (i = 0; i <= valores.length; i++) {
+                objeto[i] = new Array(2);
+                objeto[i][0] = valores[i];
+                objeto[i][1] = posiciones[i];
+            }
+            objeto.sort(function(a, b) {
+                return b[0] - a[0];
+            });
+            for (i = 0; i < posiciones.length; i++) {
+                valoresordenados[i] = objeto[i][0];
+                posicionesordenadas[i] = objeto[i][1];
+                frecuenciasordenadas[i] = parseInt((posicionesordenadas[i] * contextoDeAudio.sampleRate) / analizador.fftSize);
+            }(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0, 10);
+            (document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0, 8);
+            //console.log(posicionesordenadas);
+            if (posiciones.length == 0) {
+                borra();
+            }
+            //console.log('posiciones: '+posiciones)
+            //console.log('valores: '+valores)
+            (document.querySelector(".nota")).innerHTML = '--';
+            if (posiciones) {
+                (document.querySelector(".nota")).innerHTML = '?';
+                marca(posiciones);
+                //borra();
+                //comprobar todas las notas
+                //Notas--------
+                //comprobar todas las notas
+                //C
+                if (comprobar(C6, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'C';
+                    (document.querySelector("#C")).className = 'nota_aprox';
+                }
+                if (comprobar(C6a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'C+';
+                    (document.querySelector("#C")).className = 'nota_alta';
+                }
+                if (comprobar(C6b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-C';
+                    (document.querySelector("#C")).className = 'nota_baja';
+                }
+                //C#
+                if (comprobar(Cs6, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'C#';
+                    (document.querySelector("#Cs")).className = 'nota_aprox';
+                }
+                if (comprobar(Cs6a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'C#+';
+                    (document.querySelector("#Cs")).className = 'nota_alta';
+                }
+                if (comprobar(Cs6b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-C#';
+                    (document.querySelector("#Cs")).className = 'nota_baja';
+                }
+                //D
+                if (comprobar(D6, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'D';
+                    (document.querySelector("#D")).className = 'nota_aprox';
+                }
+                if (comprobar(D6a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'D+';
+                    (document.querySelector("#D")).className = 'nota_alta';
+                }
+                if (comprobar(D6b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-D';
+                    (document.querySelector("#D")).className = 'nota_baja';
+                }
+                if (comprobar(D4, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'D';
+                    (document.querySelector("#D")).className = 'nota_aprox';
+                }
+                if (comprobar(D4a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'D+';
+                    (document.querySelector("#D")).className = 'nota_alta';
+                }
+                if (comprobar(D4b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-D';
+                    (document.querySelector("#D")).className = 'nota_baja';
+                }
+                //Eb
+                if (comprobar(Eb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Eb';
+                    (document.querySelector("#Eb")).className = 'nota_aprox';
+                }
+                if (comprobar(Eba, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Eb+';
+                    (document.querySelector("#Eb")).className = 'nota_alta';
+                }
+                if (comprobar(Ebaa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Eb+';
+                    (document.querySelector("#Eb")).className = 'nota_alta';
+                }
+                if (comprobar(Ebb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-Eb';
+                    (document.querySelector("#Eb")).className = 'nota_baja';
+                }
+                if (comprobar(Ebbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-Eb';
+                    (document.querySelector("#Eb")).className = 'nota_baja';
+                }
+                //E
+                if (comprobar(E6, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'E';
+                    (document.querySelector("#E")).className = 'nota_aprox';
+                }
+                if (comprobar(E6a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'E+';
+                    (document.querySelector("#E")).className = 'nota_alta';
+                }
+                if (comprobar(E6b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-E';
+                    (document.querySelector("#E")).className = 'nota_baja';
+                }
+                if (comprobar(E1, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'E';
+                    (document.querySelector("#E")).className = 'nota_aprox';
+                }
+                if (comprobar(E1a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'E+';
+                    (document.querySelector("#E")).className = 'nota_alta';
+                }
+                if (comprobar(E1aa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'E+';
+                    (document.querySelector("#E")).className = 'nota_alta';
+                }
+                if (comprobar(E1b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-E';
+                    (document.querySelector("#E")).className = 'nota_baja';
+                }
+                if (comprobar(E1bb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-E';
+                    (document.querySelector("#E")).className = 'nota_baja';
+                }
+                //F
+                if (comprobar(F6, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F';
+                    (document.querySelector("#F")).className = 'nota_aprox';
+                }
+                if (comprobar(F6a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F+';
+                    (document.querySelector("#F")).className = 'nota_alta';
+                }
+                if (comprobar(F6b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-F';
+                    (document.querySelector("#F")).className = 'nota_baja';
+                }
+                if (comprobar(F3, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F';
+                    (document.querySelector("#F")).className = 'nota_aprox';
+                }
+                if (comprobar(F3a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F+';
+                    (document.querySelector("#F")).className = 'nota_alta';
+                }
+                if (comprobar(F3b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-F';
+                    (document.querySelector("#F")).className = 'nota_baja';
+                }
+                //F#
+                if (comprobar(Fs, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F#';
+                    (document.querySelector("#Fs")).className = 'nota_aprox';
+                }
+                if (comprobar(Fsa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F#+';
+                    (document.querySelector("#Fs")).className = 'nota_alta';
+                }
+                if (comprobar(Fsaa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'F#+';
+                    (document.querySelector("#Fs")).className = 'nota_alta';
+                }
+                if (comprobar(Fsb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-F#';
+                    (document.querySelector("#Fs")).className = 'nota_baja';
+                }
+                if (comprobar(Fsbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-F#';
+                    (document.querySelector("#Fs")).className = 'nota_baja';
+                }
+                //G
+                if (comprobar(G, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G';
+                    (document.querySelector("#G")).className = 'nota_aprox';
+                }
+                if (comprobar(Ga, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G+';
+                    (document.querySelector("#G")).className = 'nota_alta';
+                }
+                if (comprobar(Gaa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G+';
+                    (document.querySelector("#G")).className = 'nota_alta';
+                }
+                if (comprobar(Gb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-G';
+                    (document.querySelector("#G")).className = 'nota_baja';
+                }
+                if (comprobar(Gbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-G';
+                    (document.querySelector("#G")).className = 'nota_baja';
+                }
+                //G#
+                if (comprobar(Gs, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G#';
+                    (document.querySelector("#Gs")).className = 'nota_aprox';
+                }
+                if (comprobar(Gsa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G#+';
+                    (document.querySelector("#Gs")).className = 'nota_alta';
+                }
+                if (comprobar(Gsaa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'G#+';
+                    (document.querySelector("#Gs")).className = 'nota_alta';
+                }
+                if (comprobar(Gsb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-G#';
+                    (document.querySelector("#Gs")).className = 'nota_baja';
+                }
+                if (comprobar(Gsbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-G#';
+                    (document.querySelector("#Gs")).className = 'nota_baja';
+                }
+                //A
+                if (comprobar(A5, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'A';
+                    (document.querySelector("#A")).className = 'nota_aprox';
+                }
+                if (comprobar(A5a, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'A+';
+                    (document.querySelector("#A")).className = 'nota_alta';
+                }
+                if (comprobar(A5aa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'A+';
+                    (document.querySelector("#A")).className = 'nota_alta';
+                }
+                if (comprobar(A5b, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-A';
+                    (document.querySelector("#A")).className = 'nota_baja';
+                }
+                if (comprobar(A5bb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-A';
+                    (document.querySelector("#A")).className = 'nota_baja';
+                }
+                if (comprobar(A2, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'A';
+                    (document.querySelector("#A")).className = 'nota_aprox';
+                }
+                //Bb
+                if (comprobar(Bb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Bb';
+                    (document.querySelector("#Bb")).className = 'nota_aprox';
+                }
+                if (comprobar(Bba, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Bb+';
+                    (document.querySelector("#Bb")).className = 'nota_alta';
+                }
+                if (comprobar(Bbaa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Bb+';
+                    (document.querySelector("#Bb")).className = 'nota_alta';
+                }
+                if (comprobar(BBb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-Bb';
+                    (document.querySelector("#Bb")).className = 'nota_baja';
+                }
+                if (comprobar(Bbbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-Bb';
+                    (document.querySelector("#Bb")).className = 'nota_baja';
+                }
+                if (comprobar(B2, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'Bb';
+                    (document.querySelector("#Bb")).className = 'nota_aprox';
+                }
+                //B
+                if (comprobar(B, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'B';
+                    (document.querySelector("#B")).className = 'nota_aprox';
+                }
+                if (comprobar(Ba, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'B+';
+                    (document.querySelector("#B")).className = 'nota_alta';
+                }
+                if (comprobar(Baa, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = 'B+';
+                    (document.querySelector("#B")).className = 'nota_alta';
+                }
+                if (comprobar(Bb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-B';
+                    (document.querySelector("#B")).className = 'nota_baja';
+                }
+                if (comprobar(Bbb, posiciones) === true) {
+                    (document.querySelector(".nota")).innerHTML = '-B';
+                    (document.querySelector("#B")).className = 'nota_baja';
                 }
             }
         }
-    </script>
+    } // fin bucle para valores mayores que el umbral
+requestAnimationFrame(analisis.bind(this))
+
+} // fin dibujar espectro canvas principal y análisis
+
+function dibujaEspectro() {
+    //dibujamos el espectro de resolución
+    var espectro = document.querySelector('#canvasresolucion');
+    var ctxe = espectro.getContext('2d');
+    var ancho = document.getElementById('marco').offsetWidth - 80;
+    espectro.width = ancho;
+    espectro.height = 200;
+    var alto = 200;
+    var ancho_barra;
+    var resolucion = 18;
+    ctxe.clearRect(0, 0, ancho, alto);
+    var datos_frecuencia = new Uint8Array(analizador.frequencyBinCount);
+    analizador.getByteFrequencyData(datos_frecuencia);
+    var NumerodeBarras = Math.round(ancho / resolucion);
+    //dibujamos las barras
+	for (var i = 0; i < NumerodeBarras; i++) {
+        //for (var i = 0; i < (datos_frecuencia.length); i++) {
+        var magnitud = datos_frecuencia[i];
+        // ajustamos las variables para dibujarlas en el canvas
+        //dibujamos tipo hue ;)
+        var hue = i / datos_frecuencia.length * 360
+        ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+        ctxe.fillRect(resolucion * i, alto - 20, resolucion - 2, -magnitud + 40);
+        ctxe.fillStyle = "rgb(225,225,225)";
+        ctxe.font = "8pt Helvetica";
+        ctxe.fillText(i, resolucion * i, alto);
+        if (i == 8) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+        if (i == 15) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+        if (i == 31) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+    }
+}
+//Dibujar forma de onda en la línea de tiempo
+function dibujarOnda(){
+	
+var marcotiempo = document.querySelector('#canvasonda');
+    var ctxo = marcotiempo.getContext('2d');
+    var ancho = document.getElementById('marcoonda').offsetWidth - 80;
+    marcotiempo.width = ancho;
+    marcotiempo.height = 200;
+   var tiempos = new Uint8Array(analizador.frequencyBinCount);
+    analizador.getByteTimeDomainData(tiempos);
+	
+// Dibujamdo el Gráfico en el dominio del tiempo.
+  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+    var valor = tiempos[i];
+    var porcentaje = valor / 256;
+    var amplitud = 200 * porcentaje;
+    var offset = 200 - amplitud - 1;
+    var barWidth = ancho/analizador.frequencyBinCount;
+    ctxo.fillStyle = 'white';
+    ctxo.fillRect(i * barWidth, offset, 1, 2);
+  }	
+	
+	
+	
+	
+}
+
+
+//Check notas/porciones de fecuencia
+
+function comprobar(intervalosNota, posiciones) {
+    for (var i = 0; i < (intervalosNota.length); i++) {
+        var a = posiciones.indexOf(intervalosNota[i]);
+        if (a == -1) {
+            return false;
+        }
+    }
+    //alert('esta');
+    //marca(intervalosNota, posiciones);
+    //marcaencanvas(intervalosNota, posiciones);
+    return true;
+}
+
+function marca(posiciones) {
+    for (var i = 0; i < (posiciones.length); i++) {
+        //$("#" + intervalosNota[i]).html(intervalosNota[i]) ;
+        //console.log(intervalosNota[i]);
+        if ($("#" + posiciones[i]) || $("." + posiciones[i])) {
+            if ($("#" + posiciones[i]).hasClass('aprox')) {
+                $("#" + posiciones[i]).addClass('warning')
+            }
+            if ($("." + posiciones[i]).hasClass('aprox1')) {
+                $("." + posiciones[i]).addClass('warning1')
+            } else {
+                $("#" + posiciones[i]).addClass('success');
+            }
+        }
+    }
+}
+
+function borra() {
+    $("*").removeClass('success');
+    $("*").removeClass('nota_aprox');
+    $("*").removeClass('warning');
+    $("*").removeClass('warning1');
+    $("*").removeClass('nota_alta');
+    $("*").removeClass('nota_baja');
+}
+//}
+// línea comparador---------
+
+function dibujarlineacomparador(c, x1, x2, y) {
+    c.lineWidth = 1;
+    var adaptedY = Math.floor(y) + 0.5;
+    c.beginPath();
+    c.moveTo(x1, 128);
+    c.lineTo(x2, 128);
+    c.stroke();
+}
+//Escala 256 valores
+
+function dibujarescala(c, ALTO, ANCHO) {
+    c.font = "8pt Helvetica";
+    var count = 0;
+    var paso = 50;
+    var margen = 5;
+    var colHead = 0;
+    var rowHead = 0;
+    yScalar = (ALTO - colHead - margen) / (ALTO);
+    for (i = ALTO; i >= 0; i -= paso) {
+        y = colHead + (yScalar * count * paso);
+        c.fillText(i, margen, y + margen)
+        c.moveTo(rowHead, y)
+        c.lineTo(ANCHO, y)
+        count++;
+    }
+}
+
+function sliderChange(slider) {
+    if (contextoDeAudio.activeSourceCount > 0) {
+        if (slider.id == 'volume') {
+            var volume = slider.value;
+            misNodos.volume.gain.value = volume;
+        }
+    }
+} 
+
+function textoEnMarco(){
+var provisional = document.createElement('div');
+    provisional.setAttribute('id', 'provisional');
+    var parrafo = document.createElement("p");
+	
+    var contenido = document.createTextNode("Este display mostrará un análisis en frecuencia de la señal de audio, indicando los picos de frecuencia. Durante el análisis, estos picos serán considerados como armónicos y comprobaremos su correspondencia con las notas musicales generadas por una guitarra de afinación estándar. MI-LA-RE-SOL-SI-MI");
+    provisional.appendChild(parrafo);
+    parrafo.appendChild(contenido);
+    var espectro = document.getElementById('principal');
+    var papa = espectro.parentNode;
+    papa.insertBefore(provisional, principal);
+    document.querySelector('#provisional').appendChild(parrafo);
+	var ancho = $('#principal').css('width');
+	$('#provisional').css('width', ancho);
+	
+}
+
+
+
+</script>
 
 
 </head>
 
-<body onLoad="init();">
+<body onload="init();">
+    <div class="navbar navbar-inverse navbar-fixed-top bs-docs-nav">
+        <div class="container">
+            <div class="navbar-header">
+                <button class="navbar-toggle" data-target=".bs-navbar-collapse"
+                data-toggle="collapse" type="button"><span class=
+                "sr-only">Despliega el menú</span></button> <a class=
+                "navbar-brand" href="">El audio en la web</a>
+            </div>
 
+            <nav class="collapse navbar-collapse bs-navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="index.html">Inicio</a></li>
 
-<div class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" >
-  <div class="container">
-    <div class="navbar-header">
-      <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
-        <span class="sr-only">Despliega el menú</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a href="" class="navbar-brand">El audio en la web</a>
-    </div>
-    <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
-      <ul class="nav navbar-nav">
-        <li ><a href="index.html">Inicio</a></li>
-            <li class="active"><a href="afinadorb.html" >Afinador experimental</a></li>
-            <li><a href="comenzando.html">Ejemplos</a></li>
-      </ul>
-      
-    </nav>
-  </div>
-</div>
+                    <li class="active"><a href="afinadorb.html">Afinador
+                    experimental</a></li>
 
-
-<div class="container">
-     <div class="header">
-        <h3 class="text-muted">Análisis armónico</h3>
-     </div> 
-
-      <div class="jumbotron">
-         <canvas id="principal" width="1024" height="200"></canvas>
-      </div>
-
-      <div class="row marketing">
-        <div class="col-md-5">
-            <div class="btn-group btn-group-lg">
-              <button id="play" onclick="toggleSound(this)" type="button"  class="btn  btn-default btn-info"> <span class="glyphicon glyphicon-play-circle"></span> Reproducir</button>&nbsp;<button class="btn btn-default btn-success" onclick="sonidoDirecto()"><span class=" glyphicon  glyphicon-upload "></span> Usar microfono<sup>*</sup></button>
-              </div><br /><sub>*Necesitas utilizar <a href="http://www.google.es/intl/es/chrome/browser/" target="_blank">Google Chrome</a></sub>
-              <div class="alert alert-info volumen">
-              <ul class="list-unstyled">
-              
-              <li><span>Volumen:</span></li>
-              <li><input id="volume" onchange="sliderChange(this)" type="range" min="0" max="1" step="0.01" value="1" /></li>
-              </ul>
-              </div>
-    
-          <div class="alert alert-success">
-          <h3>NOTA: &nbsp;<strong><span class="nota">--</span></strong></h3>
-            <p>Tamaño de la FFT<span class="fftsize">0</span></p>
-            <p>Frecuencia de Muestreo: <span class="muestreo">0</span></p>
-            <p>Frecuencia de Nyquist: <span class="nyquist">0</span></p>
-            
-    		<p>Longitud del Array de datos de frecuencia. 8 Bits : <span class="arrayFreq">0</span></p>
-			<span>Valor del máximo: &nbsp;<strong><span class="valor">0</span></strong></span><br>
-			<span>Posiciones de los armónicos:&nbsp;<strong><span class="posicion">posicion</span></strong></span><br>
-            <span class="glyphicon glyphicon-sort-by-attributes-alt">Posiciones&nbsp;<strong><span class="posicionord">posicion</span></strong></span><br>
-            <span>Picos de frecuencia:&nbsp;<strong><span class="picos">picos</span>&nbsp;</strong>Hz</span><br>
-            <span class="glyphicon glyphicon-sort-by-attributes-alt">Frecuencias:&nbsp;<strong><span class="frecuenciasordenadas">posicion</span></strong></span><br>
-            <span>Mayor Frecuencia:&nbsp;<strong><span class="frecuencia">frecuencia</span>&nbsp;</strong>Hz</span><br>
-            
-		           
-           </div> 
-           
-           </div>
-           <div class="col-md-7">
-            <h3>El proceso de detección</h3>
-        <p>El principal problema de utilizar el <a href="espectro.html">Nodo Analizador</a> como elemento base en la detección de frecuencias, es la resolución en la parte baja del espectro. Nuesto ContextodeAudio utiliza una frecuencia de muestreo de 44100Hz, y ajustando el valor del tamaño de la Trasformada de Fourier a 2048, podemos crear vectores de 1024 muestras, que en este caso se cuantifican con 1Byte. En este contexto, podemos rastrear en nuestro array de datos la secuencia armónica de cada nota y crear un filtro comparador para aproximar un valor. Las desviaciones de frecuencia de la muestra tomada, respecto al valor armónico original, están categorizadas en 3 tipos (&plusmn;1Hz, &plusmn;5Hz y &plusmn;10Hz). a partir de las desviaciones de los cuatro primeros armónicos de cada cuerda, podemos aproximar una nota.</p> <p>En el display superior aparecen destacados los picos de frecuencia que superan el umbral de amplitud de 128. Este vector de picos es el que compararemos con un banco de notas. Por ejemplo un MI de la sexta cuerda se mostrará cuando los 3 picos de más amplitud, correspondan a las posiciones 8, 15 y 31.</p> <p>Las desviaciones de &frac14; de tono sobre la nota, las determinará los armónicos superiores, en este caso el que ocupa la posición 31, centrado en 667 Hz. La precisión aumentaría a un &frac16; de tono si añadiéramos el valor del siguiente armonico (61) y podría mejorar si añadiésemos el siguiente (122), pero son armónicos de poco nivel que se enmascaran rápido.  
- 					
-      </div>
-</div>
-	   <div class="row marketing">
-		 	<div class="col-lg-8 table-responsive">
- 
- 
-           <table class="table table-bordered table-condensed valores">
-                                <thead>
-                                    <tr>
-                                        <th colspan="13" style="text-align:center">
-                                        Correspondencia de frecuencias</th>
-                                    </tr>
-                                
-            
-                                
-                                    <tr>
-                                        <th >&nbsp;</th>
-            
-                                        <th  id="C">C</th>
-            
-                                        <th id="Cs">C#</th>
-            
-                                        <th  id="D">D</th>
-            
-                                        <th  id="Eb">Eb</th>
-            
-                                        <th  id="E">E</th>
-            
-                                        <th id="F">F</th>
-            
-                                        <th  id="Fs" >F#</th>
-            
-                                        <th id="G">G</th>
-            
-                                        <th id="Gs"> G#</th>
-            
-                                        <th id="A">A</th>
-            
-                                        <th id="Bb">Bb</th>
-            
-                                        <th id="B">B</th>
-                                    </tr>
-                                        </thead>
-                                        <tbody>
-                                    <tr>
-                                        <td style="font-weight: bold">2</td>
-            
-                                        <td data-placement="top" data-toggle="tooltip" id=
-                                        "3" title="± 1Hz. Posición de la muestra = 3">65.41</td>
-            
-                                        <td>69.30</td>
-            
-                                        <td>73.42</td>
-            
-                                        <td>77.78</td>
-            
-                                        <td>82.41</td>
-            
-                                        <td data-placement="top" data-toggle="tooltip" id=
-                                        "4" title="± 1Hz Posición de la muestra = 4. 86Hz">87.31</td>
-            
-                                        <td>
-                                        92.50</td>
-            
-                                        <td>98.00</td>
-            
-                                        <td>103.8</td>
-            
-                                        <td data-placement="left" class="aprox" data-toggle="tooltip" id=
-                                        "5" title="± 5Hz. Posición de la muestra = 5. 107Hz">110.0</td>
-            
-                                        <td>
-                                        116.5</td>
-            
-                                        <td>123.5</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">3</td>
-            
-                                        <td data-placement="top" data-toggle="tooltip" id=
-                                        "6" title="± 1Hz Posición de la muestra = 6. 129Hz">130.8</td>
-            
-                                        <td>138.6</td>
-            
-                                        <td>146.8</td>
-            
-                                        <td data-placement="top" class="aprox" data-toggle="tooltip" id=
-                                        "7" title="± 5Hz Posición de la muestra = 7. 150Hz">155.6</td>
-            
-                                        <td>164.8</td>
-            
-                                        <td data-placement="top" data-toggle="tooltip" class="aprox" id=
-                                        "8" title="± 5Hz Posición de la muestra = 8. 172Hz">174.6</td>
-            
-                                        <td>185.0</td>
-            
-                                        <td>196.0</td>
-            
-                                        <td data-placement="top" class="aprox1" data-toggle="tooltip" id=
-                                        "10" title="± 10Hz Posición de la muestra = 10. 215Hz">207.7</td>
-            
-                                        <td>220.0</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox" id=
-                                        "11" title="± 5Hz Posición de la muestra = 11. 236Hz">
-                                        233.1</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox1" id=
-                                        "11" title="± 10Hz Posición de la muestra = 11. 236Hz">246.9</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">4</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="12" title=
-                                        "± 5Hz Posición de la muestra = 12. 258Hz">261.6</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="13" title=
-                                        "± 5Hz Posición de la muestra = 13. 279Hz">277.2</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="14" title=
-                                        "± 10Hz Posición de la muestra = 14. 301Hz">293.7</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="14" title=
-                                        "± 10Hz Posición de la muestra = 14. 301Hz">311.1</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="15" title=
-                                        "± 10Hz Posición de la muestra = 15. 322Hz">
-                                        329.6</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="16" title=
-                                        "± 15Hz Posición de la muestra = 16. 344Hz">
-                                        349.2</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="17" title=
-                                        "± 5Hz Posición de la muestra = 17. 366Hz">370.0</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="18" title=
-                                        "± 5Hz Posición de la muestra = 18. 687Hz">392.0</td>
-            
-                                        <td class="aprox1" id="19" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 10Hz Posición de la muestra = 19. 409Hz">415.3</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="20" title=
-                                        "± 10Hz Posición de la muestra = 20. 430Hz">440.0</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="22" title=
-                                        "± 10Hz Posición de la muestra = 22. 473Hz">466.2</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" id=
-                                        "23" title="± 1Hz Posición de la muestra = 23">
-                                        493.9</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">5</td>
-            
-                                        <td class="aprox1" id="24" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 10Hz Posición de la muestra = 24. 516Hz">523.3</td>
-            
-                                        <td class="aprox" id="26" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 5Hz Posición de la muestra = 26. 559Hz">554.4</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="27" title=
-                                        "± 10Hz Posición de la muestra = 27. 581Hz">587.3</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="29" title=
-                                        "± 5Hz Posición de la muestra = 29. 624Hz">622.3</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="31" title=
-                                        "± 10Hz Posición de la muestra = 31. 667Hz">659.3</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="32" title=
-                                        "± 10Hz Posición de la muestra = 32. 689Hz">698.5</td>
-            
-                                        <td class="aprox1" od="34" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 10Hz Posición de la muestra = 34. 732Hz">740.0</td>
-            
-                                        <td>784.0</td>
-            
-                                        <td class="aprox1" id="39" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 10Hz Posición de la muestra = 39. 839Hz">830.6</td>
-            
-                                        <td class="aprox" id="41" data-placement="left"
-                                        data-toggle="tooltip" title=
-                                        "± 5Hz Posición de la muestra = 41. 882Hz">880.0</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="43" title=
-                                        "± 10Hz Posición de la muestra = 43. 925Hz">932.3</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox" id=
-                                        "46" title="± 5Hz Posición de la muestra = 46. 990Hz">
-                                        987.8</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">6</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="49" title=
-                                        "± 10Hz Posición de la muestra = 49. 1055Hz">1047</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="52" title=
-                                        "± 10Hz Posición de la muestra = 52. 1119Hz">1109</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="55" title=
-                                        "± 10Hz Posición de la muestra = 55. 1184Hz">1175</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="58" title=
-                                        "± 5Hz Posición de la muestra = 58. 1248Hz">1245</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="61" title=
-                                        "± 10Hz Posición de la muestra = 61. 1313Hz">1319</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="65" title=
-                                        "± 5Hz Posición de la muestra = 65. 1399Hz">1397</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="69" title=
-                                        "± 5Hz Posición de la muestra = 69. 1485Hz">1480</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="73" title=
-                                        "± 5Hz Posición de la muestra = 73. 1571Hz">1568</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="77" title=
-                                        "± 5Hz Posición de la muestra = 77. 1658Hz">1661</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="82" title=
-                                        "± 5Hz Posición de la muestra = 82. 1765Hz">1760</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="87" title=
-                                        "± 10Hz Posición de la muestra = 87. 1873Hz">1865</td>
-                                        <td>1976</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">7</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="97" title=
-                                        "± 5Hz Posición de la muestra = 97. 2088Hz">2093</td>
-                                        <td  data-placement="left"
-                                        data-toggle="tooltip" id="103" title=
-                                        "± 1Hz Posición de la muestra = 103. 2217Hz">2217</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="109" title=
-                                        "± 5Hz Posición de la muestra = 109. 2347Hz">2349</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="116" title=
-                                        "± 10Hz Posición de la muestra = 116. 2497Hz">2489</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="122" title=
-                                        "± 10Hz Posición de la muestra = 122. 2627Hz">2637</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="130" title=
-                                        "± 5Hz Posición de la muestra = 130. 2799">2794</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="137" title=
-                                        "± 10Hz Posición de la muestra = 137. 2950Hz">2960</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="146" title=
-                                        "± 10Hz Posición de la muestra = 146. 3143Hz">3136</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="154" title=
-                                        "± 10Hz Posición de la muestra = 154. 3316Hz">3322</td>
-            
-                                        <td>3520</td>
-            
-                                        <td class="aprox" data-placement="left"
-                                        data-toggle="tooltip" id="173" title=
-                                        "± 5Hz Posición de la muestra = 173. 1725Hz">3729</td>
-            
-                                        <td>3951</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td style="font-weight: bold">8</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="194" title=
-                                        "± 10Hz Posición de la muestra = 194. 4177Hz">4186</td>
-            
-                                        <td  data-placement="left"
-                                        data-toggle="tooltip" id="206" title=
-                                        "± 1Hz Posición de la muestra = 206. 4435Hz">4435</td>
-            
-                                        <td data-placement="left"
-                                        data-toggle="tooltip" id="218" class="aprox" title=
-                                        "± 5Hz Posición de la muestra = 218. 4694Hz">4699</td>
-            
-                                        <td data-placement="left"
-                                        data-toggle="tooltip" id="231" class="aprox" title=
-                                        "± 5Hz Posición de la muestra = 231. 4974Hz">4978</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" id=
-                                        "245" title="± 1Hz Posición de la muestra = 245. 5275Hz">
-                                        5274</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox1" id=
-                                        "260" title="± 10Hz Posición de la muestra = 260. 5598Hz">
-                                        5588</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" id=
-                                        "275" title="± 1Hz Posición de la muestra = 275. 5921Hz">5920</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox" id=
-                                        "291" title="± 1Hz Posición de la muestra = 291. 6266Hz">6272</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" class="aprox1" id=
-                                        "309" title="± 10Hz Posición de la muestra = 309. 6653Hz">6645</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" id=
-                                        "327" title="± 1Hz Posición de la muestra = 327. 7041Hz">7040</td>
-            
-                                        <td class="aprox1" data-placement="left"
-                                        data-toggle="tooltip" id="346" title=
-                                        "± 10Hz Posición de la muestra = 346. 7450Hz">7459</td>
-            
-                                        <td data-placement="left" data-toggle="tooltip" id="367" title=
-                                        "± 1Hz Posición de la muestra = 367. 7902Hz">7902</td>
-                                    </tr>
-            
-                                    <tr>
-                                        <td colspan="4">Código de colores:</td>
-            
-                                        <td class="nota_baja_ley">Nota-
-                                        </td>
-                                        <td class="nota_aprox_ley" >Nota
-                                        </td>
-                                        <td class="nota_alta_ley" >Nota+
-                                        </td>
-            
-                                        
-            
-                                        <td class="ejsuccess" colspan="2">Armónico centrado
-                                        en ±1Hz</td>
-            
-                                        <td class="ejwarning" colspan="2">Armónico centrado
-                                        en ±5Hz</td>
-            
-                                        <td class="ejwarning1" colspan="2">Armónico
-                                        centrado en ±10Hz</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-      
-      
-      <h3>Resolución</h3>
-        <div class="jumbotron" id="marco">
-              
-                <canvas id="canvasresolucion" width="600" height="200"></canvas>  
+                    <li><a href="comenzando.html">Ejemplos</a></li>
+                </ul>
+            </nav>
         </div>
-    
-      </div>
-        <div class="col-md-12 col-lg-4">
-       <h3>Precisión</h3>
-       La detección basada en la carga armónica tiene una precisión limitada, sobre &frac14; de tono para la parte baja de la guitarra y &frac16; para las 3 primeras cuerdas. Este ajuste se realiza con los armónicos superiores, donde la resolución de la trasformada nos permite distingir con más exactitud los intervalos de frecuencia. En la tabla de la izquierda aparecerán sombreadas las celdas de los armónicos detectados, y en caso de corresponder a una serie armónica determinada, se sombreará la cabecera con los códigos de las notas musicales.
-       
-    
-    <p>El tamaño de cada muestra es de <strong>21.53Hz</strong>, que es la máxima resolución del analizador. Esta resolución es insuficiente para medir pasos &lt;5Hz en la parte baja del espectro de la guitarra, pero si seguimos el rastro armónico de la nota en la tabla de frecuencia y comparamos este grupo de valores con los armónicos de cada nota podemos mostrar en pantalla un resultado bastante aproximado.</p>
-	<h3>Funcionamiento</h3>
-Una vez procesamos la petición <code>.webkitGetUserMedia</code> y la conectamos a un nodo analizador en nuestra cadena de audio, podemos trabajar con la salida del analizador, que nos devolverá bytes de enteros para las muestras de señal en el dominio de la frecuencia:   
-    <div class="highlight">
-         
-            <pre class="prettyprint"><code class="language-js">
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h3 class="text-muted">Análisis armónico</h3>
+        </div>
+
+        <div class="jumbotron" id="marcofull">
+        
+            <canvas height="200" id="principal" width="1024"></canvas>
+        </div>
+
+        <div class="row marketing">
+            <div class="col-md-5">
+                <div class="btn-group btn-group-lg">
+                    <button class="btn btn-default btn-info glyphicon glyphicon-play" id="play" onclick=
+                    "reproducirSonido(this)" type=
+                    "button"> Reproducir</button>&nbsp;<button class=
+                    "btn btn-default btn-success glyphicon glyphicon-user" id="microfono" onclick="sonidoDirecto()"> Usar microfono<sup>*</sup></button>
+                </div><br>
+                <sub>*Necesitas utilizar <a href=
+                "http://www.google.es/intl/es/chrome/browser/" target=
+                "_blank">Google Chrome</a></sub>
+
+                <div class="alert alert-info volumen">
+                    <ul class="list-unstyled">
+                        <li><span>Volumen:</span></li>
+
+                        <li><input id="volume" max="1" min="0" onchange=
+                        "sliderChange(this)" step="0.01" type="range" value=
+                        "1"></li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-success">
+                    <h3>NOTA: &nbsp;<strong><span class=
+                    "nota">--</span></strong></h3>
+
+                    <p>Tamaño de la FFT<span class="fftsize">0</span></p>
+
+                    <p>Frecuencia de Muestreo: <span class=
+                    "muestreo">0</span></p>
+
+                    <p>Frecuencia de Nyquist: <span class=
+                    "nyquist">0</span></p>
+
+                    <p>Longitud del Array de datos de frecuencia. 8 Bits :
+                    <span class="arrayFreq">0</span></p><span>Valor del máximo:
+                    &nbsp;<strong><span class=
+                    "valor">0</span></strong></span><br>
+                    <span>Posiciones de los
+                    armónicos:&nbsp;<strong><span class="posicion">posicion</span></strong></span><br>
+
+                    <span class=
+                    "glyphicon glyphicon-sort-by-attributes-alt">Posiciones&nbsp;<strong><span class="posicionord">posicion</span></strong></span><br>
+
+                    <span>Picos de frecuencia:&nbsp;<strong><span class=
+                    "picos">picos</span>&nbsp;</strong>Hz</span><br>
+                    <span class=
+                    "glyphicon glyphicon-sort-by-attributes-alt">Frecuencias:&nbsp;<strong><span class="frecuenciasordenadas">posicion</span></strong></span><br>
+
+                    <span>Mayor Frecuencia:&nbsp;<strong><span class=
+                    "frecuencia">frecuencia</span>&nbsp;</strong>Hz</span><br>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <h3>El proceso de detección</h3>
+
+                <p>El principal problema de utilizar el <a href=
+                "espectro.html">Nodo Analizador</a> como elemento base en la
+                detección de frecuencias, es la resolución en la parte baja del
+                espectro. Nuesto ContextodeAudio utiliza una frecuencia de
+                muestreo de 44100Hz, y ajustando el valor del tamaño de la
+                Trasformada de Fourier a 2048, podemos crear vectores de 1024
+                muestras, que en este caso se cuantifican con 1Byte. En este
+                contexto, podemos rastrear en nuestro array de datos la
+                secuencia armónica de cada nota y crear un filtro comparador
+                para aproximar un valor. Las desviaciones de frecuencia de la
+                muestra tomada, respecto al valor armónico original, están
+                categorizadas en 3 tipos (±1Hz, ±5Hz y ±10Hz). a partir de las
+                desviaciones de los cuatro primeros armónicos de cada cuerda,
+                podemos aproximar una nota.</p>
+
+                <p>En el display superior aparecen destacados los picos de
+                frecuencia que superan el umbral de amplitud de 128. Este
+                vector de picos es el que compararemos con un banco de notas.
+                Por ejemplo un MI de la sexta cuerda se mostrará cuando los 3
+                picos de más amplitud, correspondan a las posiciones 8, 15 y
+                31.</p>
+
+                <p>Las desviaciones de ¼ de tono sobre la nota, las determinará
+                los armónicos superiores, en este caso el que ocupa la posición
+                31, centrado en 667 Hz. La precisión aumentaría a un
+                &amp;frac16; de tono si añadiéramos el valor del siguiente
+                armonico (61) y podría mejorar si añadiésemos el siguiente
+                (122), pero son armónicos de poco nivel que se enmascaran
+                rápido.</p>
+            </div>
+        </div>
+
+        <div class="row marketing">
+            <div class="col-lg-8 table-responsive">
+                <table class="table table-bordered table-condensed valores">
+                    <thead>
+                        <tr>
+                            <th colspan="13" style="text-align:center">
+                            Correspondencia de frecuencias</th>
+                        </tr>
+
+                        <tr>
+                            <th>&nbsp;</th>
+
+                            <th id="C">C</th>
+
+                            <th id="Cs">C#</th>
+
+                            <th id="D">D</th>
+
+                            <th id="Eb">Eb</th>
+
+                            <th id="E">E</th>
+
+                            <th id="F">F</th>
+
+                            <th id="Fs">F#</th>
+
+                            <th id="G">G</th>
+
+                            <th id="Gs">G#</th>
+
+                            <th id="A">A</th>
+
+                            <th id="Bb">Bb</th>
+
+                            <th id="B">B</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: bold">2</td>
+
+                            <td data-placement="top" data-toggle="tooltip" id=
+                            "3" title="± 1Hz. Posición de la muestra = 3">
+                            65.41</td>
+
+                            <td>69.30</td>
+
+                            <td>73.42</td>
+
+                            <td>77.78</td>
+
+                            <td>82.41</td>
+
+                            <td data-placement="top" data-toggle="tooltip" id=
+                            "4" title="± 1Hz Posición de la muestra = 4. 86Hz">
+                            87.31</td>
+
+                            <td>92.50</td>
+
+                            <td>98.00</td>
+
+                            <td>103.8</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="5" title=
+                            "± 5Hz. Posición de la muestra = 5. 107Hz">
+                            110.0</td>
+
+                            <td>116.5</td>
+
+                            <td>123.5</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">3</td>
+
+                            <td data-placement="top" data-toggle="tooltip" id=
+                            "6" title=
+                            "± 1Hz Posición de la muestra = 6. 129Hz">
+                            130.8</td>
+
+                            <td>138.6</td>
+
+                            <td>146.8</td>
+
+                            <td class="aprox" data-placement="top" data-toggle=
+                            "tooltip" id="7" title=
+                            "± 5Hz Posición de la muestra = 7. 150Hz">
+                            155.6</td>
+
+                            <td>164.8</td>
+
+                            <td class="aprox" data-placement="top" data-toggle=
+                            "tooltip" id="8" title=
+                            "± 5Hz Posición de la muestra = 8. 172Hz">
+                            174.6</td>
+
+                            <td>185.0</td>
+
+                            <td>196.0</td>
+
+                            <td class="aprox1" data-placement="top"
+                            data-toggle="tooltip" id="10" title=
+                            "± 10Hz Posición de la muestra = 10. 215Hz">
+                            207.7</td>
+
+                            <td>220.0</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="11" title=
+                            "± 5Hz Posición de la muestra = 11. 236Hz">
+                            233.1</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" title=
+                            "± 10Hz Posición de la muestra = 11. 236Hz">
+                            246.9</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">4</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="12" title=
+                            "± 5Hz Posición de la muestra = 12. 258Hz">
+                            261.6</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="13" title=
+                            "± 5Hz Posición de la muestra = 13. 279Hz">
+                            277.2</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="14" title=
+                            "± 10Hz Posición de la muestra = 14. 301Hz">
+                            293.7</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" title=
+                            "± 10Hz Posición de la muestra = 14. 301Hz">
+                            311.1</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="15" title=
+                            "± 10Hz Posición de la muestra = 15. 322Hz">
+                            329.6</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="16" title=
+                            "± 15Hz Posición de la muestra = 16. 344Hz">
+                            349.2</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="17" title=
+                            "± 5Hz Posición de la muestra = 17. 366Hz">
+                            370.0</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="18" title=
+                            "± 5Hz Posición de la muestra = 18. 687Hz">
+                            392.0</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="19" title=
+                            "± 10Hz Posición de la muestra = 19. 409Hz">
+                            415.3</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="20" title=
+                            "± 10Hz Posición de la muestra = 20. 430Hz">
+                            440.0</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="22" title=
+                            "± 10Hz Posición de la muestra = 22. 473Hz">
+                            466.2</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "23" title="± 1Hz Posición de la muestra = 23">
+                            493.9</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">5</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="24" title=
+                            "± 10Hz Posición de la muestra = 24. 516Hz">
+                            523.3</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="26" title=
+                            "± 5Hz Posición de la muestra = 26. 559Hz">
+                            554.4</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="27" title=
+                            "± 10Hz Posición de la muestra = 27. 581Hz">
+                            587.3</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="29" title=
+                            "± 5Hz Posición de la muestra = 29. 624Hz">
+                            622.3</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="31" title=
+                            "± 10Hz Posición de la muestra = 31. 667Hz">
+                            659.3</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="32" title=
+                            "± 10Hz Posición de la muestra = 32. 689Hz">
+                            698.5</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="34" title=
+                            "± 10Hz Posición de la muestra = 34. 732Hz">
+                            740.0</td>
+
+                            <td>784.0</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="39" title=
+                            "± 10Hz Posición de la muestra = 39. 839Hz">
+                            830.6</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="41" title=
+                            "± 5Hz Posición de la muestra = 41. 882Hz">
+                            880.0</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="43" title=
+                            "± 10Hz Posición de la muestra = 43. 925Hz">
+                            932.3</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="46" title=
+                            "± 5Hz Posición de la muestra = 46. 990Hz">
+                            987.8</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">6</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="49" title=
+                            "± 10Hz Posición de la muestra = 49. 1055Hz">
+                            1047</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="52" title=
+                            "± 10Hz Posición de la muestra = 52. 1119Hz">
+                            1109</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="55" title=
+                            "± 10Hz Posición de la muestra = 55. 1184Hz">
+                            1175</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="58" title=
+                            "± 5Hz Posición de la muestra = 58. 1248Hz">
+                            1245</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="61" title=
+                            "± 10Hz Posición de la muestra = 61. 1313Hz">
+                            1319</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="65" title=
+                            "± 5Hz Posición de la muestra = 65. 1399Hz">
+                            1397</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="69" title=
+                            "± 5Hz Posición de la muestra = 69. 1485Hz">
+                            1480</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="73" title=
+                            "± 5Hz Posición de la muestra = 73. 1571Hz">
+                            1568</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="77" title=
+                            "± 5Hz Posición de la muestra = 77. 1658Hz">
+                            1661</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="82" title=
+                            "± 5Hz Posición de la muestra = 82. 1765Hz">
+                            1760</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="87" title=
+                            "± 10Hz Posición de la muestra = 87. 1873Hz">
+                            1865</td>
+
+                            <td>1976</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">7</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="97" title=
+                            "± 5Hz Posición de la muestra = 97. 2088Hz">
+                            2093</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "103" title=
+                            "± 1Hz Posición de la muestra = 103. 2217Hz">
+                            2217</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="109" title=
+                            "± 5Hz Posición de la muestra = 109. 2347Hz">
+                            2349</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="116" title=
+                            "± 10Hz Posición de la muestra = 116. 2497Hz">
+                            2489</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="122" title=
+                            "± 10Hz Posición de la muestra = 122. 2627Hz">
+                            2637</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="130" title=
+                            "± 5Hz Posición de la muestra = 130. 2799">
+                            2794</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="137" title=
+                            "± 10Hz Posición de la muestra = 137. 2950Hz">
+                            2960</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="146" title=
+                            "± 10Hz Posición de la muestra = 146. 3143Hz">
+                            3136</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="154" title=
+                            "± 10Hz Posición de la muestra = 154. 3316Hz">
+                            3322</td>
+
+                            <td>3520</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="173" title=
+                            "± 5Hz Posición de la muestra = 173. 1725Hz">
+                            3729</td>
+
+                            <td>3951</td>
+                        </tr>
+
+                        <tr>
+                            <td style="font-weight: bold">8</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="194" title=
+                            "± 10Hz Posición de la muestra = 194. 4177Hz">
+                            4186</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "206" title=
+                            "± 1Hz Posición de la muestra = 206. 4435Hz">
+                            4435</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="218" title=
+                            "± 5Hz Posición de la muestra = 218. 4694Hz">
+                            4699</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="231" title=
+                            "± 5Hz Posición de la muestra = 231. 4974Hz">
+                            4978</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "245" title=
+                            "± 1Hz Posición de la muestra = 245. 5275Hz">
+                            5274</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="260" title=
+                            "± 10Hz Posición de la muestra = 260. 5598Hz">
+                            5588</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "275" title=
+                            "± 1Hz Posición de la muestra = 275. 5921Hz">
+                            5920</td>
+
+                            <td class="aprox" data-placement="left"
+                            data-toggle="tooltip" id="291" title=
+                            "± 1Hz Posición de la muestra = 291. 6266Hz">
+                            6272</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="309" title=
+                            "± 10Hz Posición de la muestra = 309. 6653Hz">
+                            6645</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "327" title=
+                            "± 1Hz Posición de la muestra = 327. 7041Hz">
+                            7040</td>
+
+                            <td class="aprox1" data-placement="left"
+                            data-toggle="tooltip" id="346" title=
+                            "± 10Hz Posición de la muestra = 346. 7450Hz">
+                            7459</td>
+
+                            <td data-placement="left" data-toggle="tooltip" id=
+                            "367" title=
+                            "± 1Hz Posición de la muestra = 367. 7902Hz">
+                            7902</td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="4">Código de colores:</td>
+
+                            <td class="nota_baja_ley">Nota-</td>
+
+                            <td class="nota_aprox_ley">Nota</td>
+
+                            <td class="nota_alta_ley">Nota+</td>
+
+                            <td class="ejsuccess" colspan="2">Armónico centrado
+                            en ±1Hz</td>
+
+                            <td class="ejwarning" colspan="2">Armónico centrado
+                            en ±5Hz</td>
+
+                            <td class="ejwarning1" colspan="2">Armónico
+                            centrado en ±10Hz</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Resolución</h3>
+
+                <div class="jumbotron" id="marco">
+                    <canvas height="200" id="canvasresolucion" width=
+                    "600"></canvas>
+                </div>
+            </div>
+
+            <div class="col-md-12 col-lg-4">
+                <h3>Precisión</h3>La detección basada en la carga armónica
+                tiene una precisión limitada, sobre ¼ de tono para la parte
+                baja de la guitarra y &amp;frac16; para las 3 primeras cuerdas.
+                Este ajuste se realiza con los armónicos superiores, donde la
+                resolución de la trasformada nos permite distingir con más
+                exactitud los intervalos de frecuencia. En la tabla de la
+                izquierda aparecerán sombreadas las celdas de los armónicos
+                detectados, y en caso de corresponder a una serie armónica
+                determinada, se sombreará la cabecera con los códigos de las
+                notas musicales.
+
+                <p>El tamaño de cada muestra es de <strong>21.53Hz</strong>,
+                que es la máxima resolución del analizador. Esta resolución es
+                insuficiente para medir pasos &lt;5Hz en la parte baja del
+                espectro de la guitarra, pero si seguimos el rastro armónico de
+                la nota en la tabla de frecuencia y comparamos este grupo de
+                valores con los armónicos de cada nota podemos mostrar en
+                pantalla un resultado bastante aproximado.</p>
+
+                <h3>Funcionamiento</h3>Una vez procesamos la petición
+                <code>.webkitGetUserMedia</code> y la conectamos a un nodo
+                analizador en nuestra cadena de audio, podemos trabajar con la
+                salida del analizador, que nos devolverá bytes de enteros para
+                las muestras de señal en el dominio de la frecuencia:
+
+                <div class="highlight">
+                    <pre class="prettyprint">
+<code class="language-js">
 //Byte de enteros, array de 256 valores de amplitud
 var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
 analizador.getByteFrequencyData(ByteDatosFrec);
-    </code></pre></div>
-    
-    </div>
-</div>
-    <div class="row marketing">
-           <div class="col-lg-12">
-                Los algoritmos de detección y graficado de notas procesan los valores de este array de datos recuperando la salida del nodo analizador 20 veces por segundo. Los bloques principales del análisis son:
-               <div class="panel panel-default pull-left">
-  <div class="panel-heading">
-    <h3 class="panel-title">Bloques de procesado</h3>
-  </div>
-  <div class="panel-body">
-  <ul class="list-unstyled">
-  
-    <li><strong>Comparador:</strong> El algoritmo recorre sólo los bytes de datos superiores a un umbral, establecido en 128. El objeto es reducir la carga de procesamiento y eliminar el ruido de fondo.</li>
-                <li><strong>Detector de pico:</strong> la función detecta la posición y el valor de los picos de este array de datos, los cuales serán tratados como armónicos .</li>
-                <li><strong>Banco de armónicos:</strong> Se cruzan los datos obtenidos con un banco de armónicos por nota, en forma de arrays de 3, 4 ò 5 valores.</li>
-                <li><strong>Display de datos:</strong> Se representa el código de nota y una tabla para observar la permanencia de la serie armónica en el sonido.</li>  </div>
-</div> 
-                
-                
+    </code>
+</pre>
+                </div>
             </div>
-    </div>
+        </div>
 
+        <div class="row marketing">
+            <div class="col-lg-12">
+                Los algoritmos de detección y graficado de notas procesan los
+                valores de este array de datos recuperando la salida del nodo
+                analizador 20 veces por segundo. Los bloques principales del
+                análisis son:
 
+                <div class="panel panel-default pull-left">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Bloques de procesado</h3>
+                    </div>
 
-  
-   </div>
+                    <div class="panel-body">
+                        <ul class="list-unstyled">
+                            <li><strong>Comparador:</strong> El algoritmo
+                            recorre sólo los bytes de datos superiores a un
+                            umbral, establecido en 128. El objeto es reducir la
+                            carga de procesamiento y eliminar el ruido de
+                            fondo.</li>
 
-      <div class="footer">
-         <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
-      </div>
-      
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-<script src="http://getbootstrap.com/dist/js/bootstrap.min.js"></script>
-<script src="http://getbootstrap.com/assets/js/docs.min.js"></script>
-<script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
-<script>
- $(function(){
-       $('td').tooltip({container: 'body'});
-    });
+                            <li><strong>Detector de pico:</strong> la función
+                            detecta la posición y el valor de los picos de este
+                            array de datos, los cuales serán tratados como
+                            armónicos .</li>
 
-</script>
+                            <li><strong>Banco de armónicos:</strong> Se cruzan
+                            los datos obtenidos con un banco de armónicos por
+                            nota, en forma de arrays de 3, 4 ò 5 valores.</li>
 
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+                            <li><strong>Display de datos:</strong> Se
+                            representa el código de nota y una tabla para
+                            observar la permanencia de la serie armónica en el
+                            sonido.</li>
+                        </ul>
+                    </div>
+               
+                       
+                    </div>
+               
+               <h3>Forma de onda</h3>
+        
+                        <div class="jumbotron" id="marcoonda">
+                            <canvas height="200" id="canvasonda" width="600"></canvas>
+                        </div>
+               
+               
+                </div>
+            </div>
+        </div>
 
-  ga('create', 'UA-28916569-4', 'estegrafico.com');
-  ga('send', 'pageview');
+        <div class="footer">
+            <p>© Luis Javier Gil 2013 |&nbsp; <a href=
+            "https://github.com/lontafara/El-audio-en-la-web"><img alt="Github"
+            src="imagenes/GitHub.png"></a></p>
+        </div><script src="http://code.jquery.com/jquery-1.11.0.min.js"></script> <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script> <script src="http://getbootstrap.com/dist/js/bootstrap.min.js"></script> <script src="http://getbootstrap.com/assets/js/docs.min.js"></script> <script src="google-code-prettify/prettify.js" type=
+"text/javascript"></script> <script>
+$(function(){
+        $('td').tooltip({container: 'body'});
+        });
 
-</script>
+        </script> <script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-   <!--    <script>
+        ga('create', 'UA-28916569-4', 'estegrafico.com');
+        ga('send', 'pageview');
+
+        </script> <!--    <script>
            //Imptimir equivalencias de posición/frecuencia
-		var equivalencias = Array();
-		for ( var m = 0; m <= (1024); m++) {      
-			 var frecuencia = ((m*48000)/2048);
-			 equivalencias[m] = frecuencia;			
-			
-			}
-			
-		/*console.log(
-			equivalencias
-			//No se puede construir un afinador musical con esta resolución de transformada.
-			)*/
-				
-				document.write("<h3>Intervalos de frecuencia:</h3></br><p>En Hz</p>");
+        var equivalencias = Array();
+        for ( var m = 0; m <= (1024); m++) {      
+             var frecuencia = ((m*48000)/2048);
+             equivalencias[m] = frecuencia;         
+            
+            }
+            
+        /*console.log(
+            equivalencias
+            //No se puede construir un afinador musical con esta resolución de transformada.
+            )*/
+                
+                document.write("<h3>Intervalos de frecuencia:</h3></br><p>En Hz</p>");
 
-				for (var c=0; c<equivalencias.length; c++)
-  			    document.write(c +"&nbsp;&nbsp;  "+equivalencias[c] + "<br>");
+                for (var c=0; c<equivalencias.length; c++)
+                document.write(c +"&nbsp;&nbsp;  "+equivalencias[c] + "<br>");
             
             
             
             </script> -->
+    </div>
 </body>
 </html>

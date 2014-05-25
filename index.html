@@ -123,14 +123,14 @@ function error() {
     alert('Falló la generación de la cadena de Audio. Utilizas chrome o Safari?');
 }
 
-function getUserMedia(dictionary, callback) {
+function getUserMedia(medio, llamada) {
     try {
 		navigator.getMedia = ( navigator.getUserMedia ||
                        navigator.webkitGetUserMedia ||
                        navigator.mozGetUserMedia ||
                        navigator.msGetUserMedia);
 
-        navigator.getMedia(dictionary, callback, error);
+        navigator.getMedia(medio, llamada, error);
     } catch (e) {
         alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
     }
@@ -163,43 +163,39 @@ function al_aire(fuente) {
 	
 function dibujaEspectro(){
 
-  var WIDTH = document.getElementById('marco').offsetWidth -80;
-  var HEIGHT= 200;
-  // Get the frequency data from the currently playing music
+  var ANCHO = document.getElementById('marco').offsetWidth -80;
+  var ALTO= 200;
+  // Toma los datos de señal
   analizador.getByteFrequencyData(freqs);
   analizador.getByteTimeDomainData(tiempos);
 
-  var width = Math.floor(1/freqs.length, 10);
+  var ancho = Math.floor(1/freqs.length, 10);
 
   var canvas = document.querySelector('canvas');
   var ContextoDeDibujo = canvas.getContext('2d');
  
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
-  //Calculo mi maximo
-
-  
-	
+  canvas.width = ANCHO;
+  canvas.height = ALTO;
  
   // Dibujando el espectro.
   for (var i = 0; i < analizador.frequencyBinCount; i++) {
     var value = freqs[i];
-    var percent = value / 256;
-    var height = HEIGHT * percent;
-    var offset = HEIGHT - height - 1;
-    var barWidth = WIDTH/analizador.frequencyBinCount;
+    var porcentaje = value / 256;
+    var alto = ALTO * porcentaje;
+    var offset = ALTO - alto - 1;
+    var barWidth = ANCHO/analizador.frequencyBinCount;
     var hue = i/analizador.frequencyBinCount * 360;
     ContextoDeDibujo.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-    ContextoDeDibujo.fillRect(i * barWidth, offset, barWidth, height);
+    ContextoDeDibujo.fillRect(i * barWidth, offset, barWidth, alto);
   }
 
-  // Dibujamdo el Gráfico en el dominio del tiempo.
+  // Dibujando el Gráfico en el dominio del tiempo.
   for (var i = 0; i < analizador.frequencyBinCount; i++) {
     var value = tiempos[i];
-    var percent = value / 256;
-    var height = HEIGHT * percent;
-    var offset = HEIGHT - height - 1;
-    var barWidth = WIDTH/analizador.frequencyBinCount;
+    var porcentaje = value / 256;
+    var alto = ALTO * porcentaje;
+    var offset = ALTO - alto - 1;
+    var barWidth = ANCHO/analizador.frequencyBinCount;
     ContextoDeDibujo.fillStyle = 'black';
     ContextoDeDibujo.fillRect(i * barWidth, offset, 1, 2);
   }
