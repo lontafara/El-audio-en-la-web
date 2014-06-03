@@ -17,19 +17,12 @@
 	background-color:#fffdf1;
 	
 	}
-.dangera{
-	background-color: #FFCC99;
-}	
+	
 /* Ejemplos*/
 .ejwarning1{
 	background-color:#fffdf1;
 	
 	}
-.ejdangera{
-	background-color: #FFCC99;
-}	
-.ejdanger{
-	background-color: #f2dede;}
 .ejwarning{
 	background-color:#fcf8e3;}
 .ejsuccess{
@@ -93,7 +86,7 @@ function error() {
 }
 
 function error() {
-    alert('Falló la generación de la cadena de Audio. Utilizas chrome o Safari?');
+    alert('Falló la generación de la cadena de Audio. Utilizas Chrome o Safari?');
 }
 
 function tomarEntradaMic(medio, llamada) {
@@ -817,7 +810,7 @@ function dibujarescala(c, ALTO, ANCHO) {
     }
 }
 
-function sliderChange(slider) {
+function potenciometro(slider) {
     if (contextoDeAudio.activeSourceCount > 0) {
         if (slider.id == 'volume') {
             var volume = slider.value;
@@ -883,7 +876,7 @@ function sliderChange(slider) {
                         <li><span>Volumen:</span></li>
 
                         <li><input id="volume" max="1" min="0" onchange=
-                        "sliderChange(this)" step="0.01" type="range" value=
+                        "potenciometro(this)" step="0.01" type="range" value=
                         "1"></li>
                     </ul>
                 </div>
@@ -1414,7 +1407,7 @@ function sliderChange(slider) {
             <div class="col-md-12 col-lg-4">
                 <h3>Precisión</h3>La detección basada en la carga armónica
                 tiene una precisión limitada, sobre ¼ de tono para la parte
-                baja de la guitarra y &amp;frac16; para las 3 primeras cuerdas.
+                baja de la guitarra y casi el doble para las 3 primeras cuerdas.
                 Este ajuste se realiza con los armónicos superiores, donde la
                 resolución de la trasformada nos permite distingir con más
                 exactitud los intervalos de frecuencia. En la tabla de la
