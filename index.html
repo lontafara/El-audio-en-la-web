@@ -125,12 +125,11 @@ function error() {
 
 function getUserMedia(medio, llamada) {
     try {
-		navigator.getMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-
-        navigator.getMedia(medio, llamada, error);
+		navigator.getUserMedia = 
+        	navigator.getUserMedia ||
+        	navigator.webkitGetUserMedia ||
+        	navigator.mozGetUserMedia;
+        navigator.getUserMedia(medio, llamada, error);
     } catch (e) {
         alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
     }

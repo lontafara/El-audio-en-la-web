@@ -52,7 +52,7 @@ var contextoDeAudio, analizador, mibuffer, procesado, miFuente, misNodos = {},
 function init() {
     contextoDeAudio = new (window.AudioContext || window.webkitAudioContext || window.mozAudioContext ||window.oAudioContext || window.msAudioContext)();
     prettyPrint();
-	textoEnMarco();//mostrará el texto en los marcos
+	//textoEnMarco();//mostrará el texto en los marcos
 	var sw=0;// para mantener el alert de la frecuencia de muestreo
 	cargarSonido("audios/Huajara.mp3");
 }
@@ -78,7 +78,7 @@ function sonidoDirecto() {
 	if (pausa==false){
 		misNodos.volume.disconnect();
 		 //añadir texto al marco!!
-		 textoEnMarco();
+		 //textoEnMarco();
 		document.querySelector('#microfono').innerHTML = '&nbsp;Usar mic';
 	    $('#microfono').removeClass('glyphicon glyphicon-pause btn-warning');
        $('#microfono').addClass('glyphicon glyphicon-user btn-success');
@@ -98,12 +98,11 @@ function error() {
 
 function tomarEntradaMic(medio, llamada) {
     try {
-		navigator.getMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-
-        navigator.getMedia(medio, llamada, error);
+		navigator.getUserMedia = 
+        	navigator.getUserMedia ||
+        	navigator.webkitGetUserMedia ||
+        	navigator.mozGetUserMedia;
+        navigator.getUserMedia(medio, llamada, error);
     } catch (e) {
         alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
     }
@@ -116,13 +115,9 @@ function al_aire(entrada) {
     analizador.fftSize = 2048;
     cadenaDeAudio(fuente);
     requestAnimationFrame(analisis.bind(this))
-	resolucion = setInterval(dibujaEspectro, 20);
-	tiempo = setInterval(dibujarOnda, 20);
-	miFuente = fuente;
+	 miFuente = fuente;
 	
-	//Estado del texto en el marco
-	var parrafo = document.getElementById("provisional");
-    parrafo.parentNode.removeChild(parrafo);
+	//Estado del botón de entrada de mic
 	document.querySelector('#microfono').innerHTML = '&nbsp;Pausar mic';
 	$('#microfono').removeClass('glyphicon glyphicon-user btn-success');
     $('#microfono').addClass('glyphicon glyphicon-pause btn-warning');
@@ -156,7 +151,7 @@ function reproducirSonido() {
 		 $('#play').addClass('glyphicon glyphicon-play btn-info');
          
 		 //añadir texto al marco!!
-		 textoEnMarco();
+		 //textoEnMarco();
 		
 	} else {
 			comienzo = contextoDeAudio.currentTime;
@@ -178,14 +173,15 @@ function reproducirSonido() {
 			$('#play').removeClass('glyphicon glyphicon-play btn-info');
 		    $('#play').addClass('glyphicon glyphicon-pause btn-default');
 		 	//Estado del texto en el marco
-			var parrafo = document.getElementById("provisional");
-           parrafo.parentNode.removeChild(parrafo);
+			/*var parrafo = document.getElementById("provisional");
+           parrafo.parentNode.removeChild(parrafo);*/
 		   
 			$('.volumen').css('display', 'block');
 			requestAnimationFrame(analisis.bind(this))
 			//espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
-			resolucion = setInterval(dibujaEspectro, 20);
-			 tiempo = setInterval(dibujarOnda, 20);
+			//Para el análisis se utiliza requestAnimationFrame, pero también existen funciones nativas de javascript como setInterval
+			//resolucion = setInterval(dibujaEspectro, 20);
+			//tiempo = setInterval(dibujarOnda, 20);
 			suena == true;
 			miFuente = fuente;
 
@@ -203,10 +199,21 @@ function parar() {
 
 
 function analisis() {
-    var canvas = document.getElementById('principal');
+	//FRECUENCIA: Tomamos un byte de enteros, array de 256 valores de amplitud y 1028 muestras
+    var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
+    analizador.getByteFrequencyData(ByteDatosFrec);
+	
+	//llamamos a las funciones de dibujo (Canvas de resolución y forma de onda)
+	dibujarEspectroDeResolucion(ByteDatosFrec);
+	dibujarOnda();
+	
+	
+	
+	
+	//Canvas principal
+	var canvas = document.getElementById('principal');
     var ctx = canvas.getContext('2d');
-    ANCHO = document.getElementById('marcofull').offsetWidth -80;
-
+    ANCHO = document.getElementById('pantalla').offsetWidth -80;
     ALTO = 256;
     canvas.width = ANCHO;
     canvas.height = ALTO;
@@ -215,9 +222,6 @@ function analisis() {
     //dibujo línea comparador
     dibujarlineacomparador(ctx, 0, ANCHO, 128);
     dibujarescala(ctx, ALTO, ANCHO);
-    //-----Byte de enteros, array de 256 valores de amplitud
-    var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
-    analizador.getByteFrequencyData(ByteDatosFrec);
     //---- VISUALIZAMOS ALGUNAS VARIABLES
     //console.log(ByteDatosFrec);
     var nyquist = contextoDeAudio.sampleRate / 2;
@@ -256,13 +260,16 @@ function analisis() {
         var margen = ALTO - altobarra - 1;
         if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
             pico = magnitud;
-            valores.push(pico);
+            //Creamos nuestra matriz de valores y posiciones
+			 valores.push(pico);
             posiciones.push(m);
-            ctx.fillStyle = "rgb(225,225,225)";
+            //Color blanco a los picos
+			 ctx.fillStyle = "rgb(225,225,225)";
             ctx.fillRect(m, margen, bar_width, altobarra);
             var pos = m;
             var frecuencia = ((pos * contextoDeAudio.sampleRate) / analizador.fftSize);
         } else {
+			 //color oscuro al resto
             ctx.fillStyle = "rgb(112,96,94)"
             ctx.fillRect(m, margen, bar_width, altobarra);
         }
@@ -272,13 +279,14 @@ function analisis() {
 				var altobarra = ALTO * porcentaje;
 				var margen = ALTO - altobarra -1;
 				*/
+				//Mostramos en pantalla
         (document.querySelector(".valor")).innerHTML = pico;
         (document.querySelector(".picos")).innerHTML = valores.slice(0, 8);
         (document.querySelector(".posicion")).innerHTML = posiciones.slice(0, 10);
         (document.querySelector(".frecuencia")).innerHTML = frecuencia;
         //CORRESPONDENCIA DE NOTAS     
-       	//Notas en función de la frecuencia de muestreo del dispositivo de entrada 
-		
+       
+	   	//Notas en función de la frecuencia de muestreo del dispositivo de entrada 
 		if (contextoDeAudio.sampleRate =='44100'){
 		// C
         var C6 = [6, 12, 24];
@@ -361,8 +369,7 @@ function analisis() {
 			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
 			sw=1;
 			}
-		
-		
+
         //Compruebo cuando he completado un ciclo de muestras 
         if (m == ByteDatosFrec.length) {
             //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
@@ -669,8 +676,9 @@ requestAnimationFrame(analisis.bind(this))
 
 } // fin dibujar espectro canvas principal y análisis
 
-function dibujaEspectro() {
-    //dibujamos el espectro de resolución
+
+function dibujarEspectroDeResolucion(ByteDatosFrec) {
+	//Canvas de resolución//dibujamos el espectro de **resolución**
     var espectro = document.querySelector('#canvasresolucion');
     var ctxe = espectro.getContext('2d');
     var ancho = document.getElementById('marco').offsetWidth - 80;
@@ -680,52 +688,57 @@ function dibujaEspectro() {
     var ancho_barra;
     var resolucion = 18;
     ctxe.clearRect(0, 0, ancho, alto);
-    var datos_frecuencia = new Uint8Array(analizador.frequencyBinCount);
-    analizador.getByteFrequencyData(datos_frecuencia);
-    var NumerodeBarras = Math.round(ancho / resolucion);
-    //dibujamos las barras
-	for (var i = 0; i < NumerodeBarras; i++) {
-        //for (var i = 0; i < (datos_frecuencia.length); i++) {
-        var magnitud = datos_frecuencia[i];
-        // ajustamos las variables para dibujarlas en el canvas
-        //dibujamos tipo hue ;)
-        var hue = i / datos_frecuencia.length * 360
-        ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-        ctxe.fillRect(resolucion * i, alto - 20, resolucion - 2, -magnitud + 40);
-        ctxe.fillStyle = "rgb(225,225,225)";
-        ctxe.font = "8pt Helvetica";
-        ctxe.fillText(i, resolucion * i, alto);
-        if (i == 8) {
-            ctxe.fillText('Mi', resolucion * i, 10);
-        }
-        if (i == 15) {
-            ctxe.fillText('Mi', resolucion * i, 10);
-        }
-        if (i == 31) {
-            ctxe.fillText('Mi', resolucion * i, 10);
-        }
-    }
-}
-//Dibujar forma de onda en la línea de tiempo
-function dibujarOnda(){
 	
-var marcotiempo = document.querySelector('#canvasonda');
+		//Dibujamos el espectro de resolución
+		var NumerodeBarras = Math.round(ancho / resolucion);
+		//dibujamos las barras
+		for (var i = 0; i < NumerodeBarras; i++) {
+			//for (var i = 0; i < (datos_frecuencia.length); i++) {
+			var magnitud = ByteDatosFrec[i];
+			// ajustamos las variables para dibujarlas en el canvas
+			//dibujamos tipo hue ;)
+			var hue = i / ByteDatosFrec.length * 360
+			ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+			ctxe.fillRect(resolucion * i, alto - 20, resolucion - 2, -magnitud + 40);
+			ctxe.fillStyle = "rgb(225,225,225)";
+			ctxe.font = "8pt Helvetica";
+			ctxe.fillText(i, resolucion * i, alto);
+			if (i == 8) {
+				ctxe.fillText('Mi', resolucion * i, 10);
+			}
+			if (i == 15) {
+				ctxe.fillText('Mi', resolucion * i, 10);
+			}
+			if (i == 31) {
+				ctxe.fillText('Mi', resolucion * i, 10);
+			}
+		}
+	
+	
+	}
+
+
+//Dibujar forma de onda en la línea de tiempo
+function dibujarOnda(tiempos){
+//TIEMPO: creamos un array de bytes para dibujar la forma de onda:
+	var tiempos = new Uint8Array(analizador.frequencyBinCount);
+    analizador.getByteTimeDomainData(tiempos);	
+	var marcotiempo = document.querySelector('#canvasonda');
     var ctxo = marcotiempo.getContext('2d');
     var ancho = document.getElementById('marcoonda').offsetWidth - 80;
     marcotiempo.width = ancho;
     marcotiempo.height = 200;
-   var tiempos = new Uint8Array(analizador.frequencyBinCount);
-    analizador.getByteTimeDomainData(tiempos);
+   
 	
 // Dibujamdo el Gráfico en el dominio del tiempo.
   for (var i = 0; i < analizador.frequencyBinCount; i++) {
     var valor = tiempos[i];
     var porcentaje = valor / 256;
     var amplitud = 200 * porcentaje;
-    var offset = 200 - amplitud - 1;
-    var barWidth = ancho/analizador.frequencyBinCount;
+    var ajuste = 200 - amplitud - 1;
+    var anchopixel = ancho/analizador.frequencyBinCount;
     ctxo.fillStyle = 'white';
-    ctxo.fillRect(i * barWidth, offset, 1, 2);
+    ctxo.fillRect(i * anchopixel, ajuste, 1, 2);
   }	
 	
 	
@@ -813,24 +826,6 @@ function sliderChange(slider) {
     }
 } 
 
-function textoEnMarco(){
-var provisional = document.createElement('div');
-    provisional.setAttribute('id', 'provisional');
-    var parrafo = document.createElement("p");
-	
-    var contenido = document.createTextNode("Este display mostrará un análisis en frecuencia de la señal de audio, indicando los picos de frecuencia. Durante el análisis, estos picos serán considerados como armónicos y comprobaremos su correspondencia con las notas musicales generadas por una guitarra de afinación estándar. MI-LA-RE-SOL-SI-MI");
-    provisional.appendChild(parrafo);
-    parrafo.appendChild(contenido);
-    var espectro = document.getElementById('principal');
-    var papa = espectro.parentNode;
-    papa.insertBefore(provisional, principal);
-    document.querySelector('#provisional').appendChild(parrafo);
-	var ancho = $('#principal').css('width');
-	$('#provisional').css('width', ancho);
-	
-}
-
-
 
 </script>
 
@@ -865,7 +860,8 @@ var provisional = document.createElement('div');
             <h3 class="text-muted">Análisis armónico</h3>
         </div>
 
-        <div class="jumbotron" id="marcofull">
+        <div class="jumbotron" id="pantalla" data-placement="bottom" data-toggle="tooltip"  title=
+                            "Este display muestra un análisis en frecuencia de la señal de audio, indicando los picos de frecuencia. Durante el análisis, estos picos serán considerados como armónicos y comprobaremos su correspondencia con las notas musicales generadas por una guitarra de afinación estándar. MI-LA-RE-SOL-SI-MI">
         
             <canvas height="200" id="principal" width="1024"></canvas>
         </div>
@@ -1511,6 +1507,7 @@ analizador.getByteFrequencyData(ByteDatosFrec);
 "text/javascript"></script> <script>
 $(function(){
         $('td').tooltip({container: 'body'});
+		$('#pantalla').tooltip({container: 'body'});
         });
 
         </script> <script>
@@ -1526,7 +1523,7 @@ $(function(){
            //Imptimir equivalencias de posición/frecuencia
         var equivalencias = Array();
         for ( var m = 0; m <= (1024); m++) {      
-             var frecuencia = ((m*48000)/2048);
+             var frecuencia = ((m*44100)/2048);
              equivalencias[m] = frecuencia;         
             
             }

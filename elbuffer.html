@@ -86,28 +86,29 @@
 
 <p>En nuestro contexto de audio, podemos utilizar archivos de datos de audio en varios formatos, como WAV, MP3, AAC, OGG y otros. La compatibilidad con navegadores para diferentes formatos de audio varía según <a href="http://www.w3schools.com/html/html5_audio.asp" target="_blank">esta tabla</a>.</p>
 
-<p>El siguiente código muestra la carga una muestra de sonido:
+<p>El siguiente código muestra la carga de un archivo de sonido:
 </p>
               
               <div class="highlight">
                <pre class="prettyprint"><code class="language-js">
-   // Creamos el contexto de audio
-	window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	var contextoDeAudio = new AudioContext();
-    // CARGAMOS el archivo con petición asíncorna XMLHTTP
-    function cargarSonido(url) {
+        // Damos la instrucción de ejeuctar inciar(); más adelante
+        windiow.onload= iniciar();
+        var mibuffer;
+        var contextoDeAudio;
+        // Declaramos la función cargarSonido(), que requerirá el archivo por petición asíncorna XMLHTTP
+     function cargarSonido(url) {
         var peticion = new XMLHttpRequest();
         peticion.open('GET', url, true);
 
-        // Tipo de respuesta:
+        // Especificamos el tipo de respuesta:
         peticion.responseType = 'arraybuffer';
-        // Cuando cargen los datos de audio:
-        peticion.onload = function() {
-        	contextoDeAudio.decodeAudioData(peticion.response, function(buffer) {
-      			mibuffer = buffer;
-    		}, onError);
-  		}
-  		request.send();
+		 //cuando cargue decodificamos los datos de audio y los introducimos como una PCM en la variable mi buffer
+		 peticion.onload = function(){
+			contextoDeAudio.decodeAudioData(peticion.response, function(elbuffer){
+				mibuffer=elbuffer;
+				});
+			}
+    	peticion.send();
 	}
             </code></pre>
            </div>   
@@ -117,7 +118,27 @@
 
 <p>Una vez que los datos del archivo de audio (no decodificado) han sido recibidos, que pueden conservarse para una decodificación posterior, o puede ser decodificado de forma inmediata utilizando el método AudioContext <code>decodeAudioData()</code>. Este método toma del ArrayBuffer los datos del archivo de audio almacenados en <code>peticion.response</code>, la respuesta de nuestra petición, y decodifica de forma asíncrona (no bloquea el proceso principal de JavaScript en ejecución).</p>
 <p>Cuando <code>decodeAudioData()</code> ha terminado, se llama a una función de devolución que proporciona los datos de audio PCM decodificado como AudioBuffer.
-</p>   
+</p>  
+<p>El siguiente fragmento de código muestra el proceso general para reproducir un sonido:</p>
+<ul><li>Cargamos el sonido</li><li>creamos una fuente de audio con los datos contenidos en el buffer con el método  <code>createBufferSource</code>.</li><li>Conectamos la fuente al destino, en este caso el nodo <code>contextoDeAudio.destination</code> que representa el final de la cadena de audio y será lo que escuchemos en los altavoces del dispositivo.</li></ul>
+<div class="highlight">
+               <pre class="prettyprint"><code class="language-js">
+        // Damos la instrucción de ejeuctar inciar(); más adelante
+        function iniciar(){
+        //Cramos el contexto de audio
+        contextoDeAudio = new webkitAudioContext;
+        //Llamamos a la función cargar sonido con la ruta de nuestro archivo de audio
+        cargarSonido(/nuestroaudio.mp3);
+        //creamos la fuente
+        var fuente = contextoDeAudio.createBufferSource();
+        fuente.connect(contextoDeAudio.destination);
+        //Reproducimos la fuente desde el segundo 0
+        fuente.start(0);
+        
+        }
+            </code></pre>
+           </div>   
+ 
        
       </div><!--/span-->         
       
@@ -128,7 +149,7 @@
           <div class="list-group">
             
             <a href="comenzando.html" class="list-group-item ">Comenzando</a>
-            <a href="#" class="list-group-item active">El Bufer</a>
+            <a href="#" class="list-group-item active">El Buffer</a>
             <a href="oscilador.html" class="list-group-item">Oscilador</a>
             <a href="espectro.html" class="list-group-item ">Espectro</a>
             <a href="paneado.html" class="list-group-item">Paneado</a>
