@@ -90,7 +90,7 @@
             		 <li><strong>Volumen:</strong></li>
                		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valorvol">1</span></li>
             </ul>
-              <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
+              <p> <button id="play" class="btn btn-info btn-lg glyphicon glyphicon-play" onclick="playPause(this)" type="button" > Reproducir</button></p>
                    
         
                 	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
@@ -363,6 +363,8 @@ function playPause() {
         console.log('Pausado en', retardo);
         // Grabar posición donde se pausó.
         document.querySelector('#play').innerHTML = 'Reproducir';
+		 $('#play').removeClass('glyphicon glyphicon-pause btn-danger');
+		 $('#play').addClass('glyphicon glyphicon-play btn-info');
         //Pulsa el botón reproducir!!
         pulsaElBotonReproducir();
     } else {
@@ -380,6 +382,8 @@ function playPause() {
         requestAnimationFrame(dibujaEspectro.bind(this))
 		 miFuente = source;
         document.querySelector('#play').innerHTML = 'Pausar';
+		 $('#play').removeClass('glyphicon glyphicon-play btn-info');
+		 $('#play').addClass('glyphicon glyphicon-pause btn-danger');
         var parrafo = document.getElementById("provisional");
         parrafo.parentNode.removeChild(parrafo);
     }
