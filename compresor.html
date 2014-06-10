@@ -43,7 +43,7 @@
 </script>
   </head>
 
-  <body onLoad="prettyPrint()">
+  <body onLoad="prettyPrint();inicializar();">
     <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
       <div class="container">
         <div class="navbar-header">
@@ -88,23 +88,29 @@
             <h4>Descripción</h4>
               	<p> El compresor de rango dinámico es una herramienta muy común en la producción musical y el desarrollo de aplicaciones interactivas de audio.</p>
               	<p>Nos permite reducir los niveles más altos de señal para prevenir la distorsión.</p>
-                <p>En el ejemplo se ha incluido un medidor experimental de dB mediante el nodo <code>createScriptProcessor</code>que toma el nivel de salida del nodo compresor, calcula el máximo valor y lo presenta en pantalla sobre en elemento <code> canvas </code> </p>
+                <p>En este ejemplo se ha colocado un nodo compresor al final de la cadena de audio, un nodo analizador para dibujar el espectro de frecuencias y se ha implementado un medidor experimental de dB mediante el nodo <code>createScriptProcessor</code>que toma el nivel de salida del nodo compresor, calcula el máximo valor y lo presenta en pantalla sobre un elemento <code>canvas</code>, a modo de indicador de nivel de dB de salida. </p>
              </div>
               <div class="col-6 col-sm-6 col-lg-4"> 
              <div class="bs-callout bs-callout-info">
                      <h4>Compresor:</h4>
                      <div class="medidor pull-left" style="margin-right:10px">
-            				<canvas id="meter1" width="50" height="200"></canvas>
+            				<canvas id="meter1" width="50" height="300"></canvas>
         				</div>
                                <dl class="nav nav-pills ">
                                 <dt>Umbral: </dt>
-                                <dd><input id="umbral" onchange="potenciometro(this)" type="range" min="-100" max="0" step="1" value="-24" /></dd>
-                                <dd><span id="umbral-valor">-24</span>&nbsp;dB<dd>
+                                <dd><input id="umbral" onchange="potenciometro(this)" type="range" min="-100" max="0" step="1" value="0" /></dd>
+                                <dd><span id="umbral-valor">0</span>&nbsp;dB<dd>
                                
                                 <dt>Ratio de Compresión: </dt>
-                                <dd><input id="ratio" onchange="potenciometro(this)" type="range" min="1" max="0" step="20" value="12" /></dd>
-                                <dd><span>1:</span><span id="ratio-valor">12</span>.<br><small>dB entrada/salida</small></dd>
+                                <dd><input id="ratio" onchange="potenciometro(this)" type="range" min="1" max="20" step="1" value="1" /></dd>
+                                <dd><span>1:</span><span id="ratio-valor">1</span>.<sub>dB entrada/salida</sub></dd>
                                  <dt>Reducción en dB =<span id="reduccion">0</span>&nbsp;dB</dt>
+                                <dt>Ataque: </dt>
+                                <dd><input id="ataque" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.1" value="0.1" /></dd>
+                                <dd><span id="ataque-valor">0.1</span>seg.<sub>Tiempo para reducir la ganancia 10dB</sub></dd>
+                                <dt>Liberación: </dt>
+                                <dd><input id="liberacion" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.1" value="0.1" /></dd>
+                                <dd><span id="liberacion-valor">0.1</span>seg.<sub>Tiempo para incrementar la ganancia 10dB</sub></dd>
                                 </dl>
                    			</div>
             
@@ -112,12 +118,12 @@
             
             <div class="col-6 col-sm-6 col-lg-4">
               <h4>Controles</h4>
-               <p> <button id="play" class="btn btn-info" onclick="playPause(this)" type="button" >Reproducir</button></p>
+               <p> <button id="play" class="btn btn-info btn-lg glyphicon glyphicon-play " onclick="playPause(this)" type="button" >Reproducir</button></p>
                  <ul class="list-unstyled">      
             		 <li><p><strong>Volumen:</strong></li>
-               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="3" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valrvol">1</span></li>
+               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="3" step="0.01" value="1" />&nbsp;x <span id="varvol">1</span><sub>+<span id="dBvol">0</span>dB</sub></li>
                      </ul>
-                	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
+                	<p><button id="menos" type="button" class="btn" onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
             <button class="btn btn-warning" data-toggle="modal" data-target="#myModal">Ver Código fuente</button>
 
 		<!-- Modal -->
@@ -155,7 +161,7 @@
 		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
 		
 		var comienzo = 0;
- 		var startOffset = 0;
+ 		var retardo = 0;
 
 	cargarSonido("audios/Huajara.mp3");
 	
@@ -184,8 +190,8 @@
         // Stop
         var source = miFuente;
         source.noteOff(0); 
-        startOffset += contextoDeAudio.currentTime - this.comienzo;
-        console.log('Pausado en', startOffset);
+        retardo += contextoDeAudio.currentTime - this.comienzo;
+        console.log('Pausado en', retardo);
         // Grabar posición donde se pausó.
         document.querySelector('#play').innerHTML= 'Reproducir';
         //Pulsa el botón reproducir!!
@@ -194,7 +200,7 @@
       } else {
         
         comienzo = contextoDeAudio.currentTime;
-        console.log('started at', startOffset);
+        console.log('started at', retardo);
         var source = contextoDeAudio.createBufferSource();
         source.buffer = mibuffer;
         source.loop = true;
@@ -203,7 +209,7 @@
          // se puede pasar tambien contextoDeAudio.currentTime
         suena==true;
         //source.noteOn(0);
-        source.start(0, startOffset % source.buffer.duration);  
+        source.start(0, retardo % source.buffer.duration);  
          
         marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
         miFuente = source;
@@ -466,37 +472,33 @@ document.querySelector('#provisional').appendChild(parrafo);
 		var resolucion = 5;	
 		document.querySelector('#resolucion').innerHTML= resolucion;
 	//crea el contexto de audio
-		var miFuente, mibuffer, misNodos = {}, espectro,imprimedBL,imprimedBR;
+		var miFuente, mibuffer, misNodos = {}, espectro,maximo;
 		var suena = false;	
 		var contextoDeAudio = new (window.AudioContext || window.webkitAudioContext || window.mozAudioContext ||window.oAudioContext || window.msAudioContext)();
 		
 		var comienzo = 0;
- 		var startOffset = 0;
-
+ 		var retardo = 0;
+function inicializar(){
 	cargarSonido("audios/Huajara.mp3");
-	
+}
 	
 		
 	
 	
 	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
      function cargarSonido(url) {
-        var peticion = new XMLHttpRequest();
-        peticion.open('GET', url, true);
-
-        // Cuando cargen los datos de audio:
-        peticion.responseType = 'arraybuffer';
-        peticion.addEventListener('load', bufferSound, false);
-        peticion.send();
-    
-	}
-	
-	
-     function bufferSound(event) {
-         var peticion = event.target;
-         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
-         mibuffer = buffer;
+    var peticion = new XMLHttpRequest();
+    peticion.open('GET', url, true);
+    // Cuando cargen los datos de audio:
+    peticion.responseType = 'arraybuffer';
+    //cuando cargue decodificamos los datos de audio y los introducimos como una PCM en la variable mi buffer
+    peticion.onload = function() {
+        contextoDeAudio.decodeAudioData(peticion.response, function(elbuffer) {
+            mibuffer = elbuffer;
+        });
     }
+    peticion.send();
+}
 
 
 function playPause(){
@@ -504,17 +506,19 @@ if (suena) {
     // Stop
 	 var source = miFuente;
          source.noteOff(0); 
-    startOffset += contextoDeAudio.currentTime - this.comienzo;
-    console.log('Pausado en', startOffset);
+    retardo += contextoDeAudio.currentTime - this.comienzo;
+    console.log('Pausado en', retardo);
     // Grabar posición donde se pausó.
-	document.querySelector('#play').innerHTML= 'Reproducir';
+	document.querySelector('#play').innerHTML = 'Reproducir';
+		 $('#play').removeClass('glyphicon glyphicon-pause btn-danger');
+		 $('#play').addClass('glyphicon glyphicon-play btn-info');
 	//Pulsa el botón reproducir!!
     pulsaElBotonReproducir();
 
   } else {
 	
     comienzo = contextoDeAudio.currentTime;
-    console.log('started at', startOffset);
+    console.log('started at', retardo);
     var source = contextoDeAudio.createBufferSource();
      source.buffer = mibuffer;
      source.loop = true;
@@ -523,11 +527,14 @@ if (suena) {
             // se puede pasar tambien contextoDeAudio.currentTime
       suena==true;
 	//source.noteOn(0);
-     source.start(0, startOffset % source.buffer.duration);  
+     source.start(0, retardo % source.buffer.duration);  
 	 
-      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-      miFuente = source;
-     document.querySelector('#play').innerHTML= 'Pausar';
+      //marcoespectro = setInterval(imprimeDB(maximo), 20); //llamamos a la función dibujarEspectro cada 20 ms
+      requestAnimationFrame(dibujaEspectro.bind(this))
+	  miFuente = source;
+     document.querySelector('#play').innerHTML = 'Pausar';
+		 $('#play').removeClass('glyphicon glyphicon-play btn-info');
+		 $('#play').addClass('glyphicon glyphicon-pause btn-danger');
 	 var parrafo = document.getElementById("provisional");
 	 parrafo.parentNode.removeChild(parrafo);   
 
@@ -535,9 +542,7 @@ if (suena) {
   this.suena = !this.suena;
 }
 
- function cadenaDeAudio(source) {
-
-		    misNodos.panner = contextoDeAudio.createPanner();
+function cadenaDeAudio(source) {
 		    misNodos.volumen = contextoDeAudio.createGainNode();
 			misNodos.compresor = contextoDeAudio.createDynamicsCompressor();
 			//procesador para dibujar los indicadores de volumen
@@ -557,9 +562,12 @@ if (suena) {
  			// Compresor
 			var umbral = document.querySelector('#umbral').value;
 			var ratio = document.querySelector('#ratio').value;	
- 			misNodos.compresor.threshold.value = umbral;
+ 			var ataque = document.querySelector('#ataque').value;
+			var liberacion = document.querySelector('#liberacion').value;	
+			misNodos.compresor.threshold.value = umbral;
 			misNodos.compresor.ratio.value= ratio;
-			
+			misNodos.compresor.attack.value= ataque;
+			misNodos.compresor.release.value=liberacion;
 			//Ruteo
 			source.connect(misNodos.volumen);
             //misNodos.panner.connect(misNodos.procesador);
@@ -568,36 +576,33 @@ if (suena) {
 			misNodos.compresor.connect(misNodos.analizador);
 			misNodos.procesador.connect(contextoDeAudio.destination);
 						
-			misNodos.analizador.connect(contextoDeAudio.destination);
+			//misNodos.analizador.connect(contextoDeAudio.destination);
 			
 			misNodos.compresor.connect(contextoDeAudio.destination);
 			
 			misNodos.procesador.onaudioprocess = function(e){
-			//CANAL L
-				
-				//Borramos el canvas 
+			//Nodo de procesado con JavaScript
+				//inicialiamos variables de dibujo del medidor de nivel de volumen
 				ctx.fillStyle = '#F7F7F7';
 				ctx.fillRect(0,0,w,h);
 				
 				
 				//var intl = e.inputBuffer.getChannelData(0);// Devuelve un Floar 32 Array con los valores de la PCM entre -1 y 1
 				//ej. : valor  de muestra: 0.13016553223133087. Suleo (en dB) 20log(0.00000000000001/1)= -340.  Pero visualizamos sobre un piso de 72dB  72dB=0.  
-				// calculamos el pico cada 1024 muestras de la PCM del buffer
+				// calculamos el pico cada 1024 muestras de la PCM del buffer. Cada muestra del vector se cuantifica en este caso con 1 Byte, 128 es centro del rango dinámico.
 			var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
-						  misNodos.analizador.getByteTimeDomainData(muestras);
-						  //console.log(
-						  //muestras.length
-						  
-						  //)
-						  
+			misNodos.analizador.getByteTimeDomainData(muestras);
 						  var max=0;
-						  for(var i = 0; i < muestras.length; i++){
+						  for(var i = 0; i <= muestras.length; i++){
 									max = muestras[i] > max ? muestras[i] : max;
+								
 								}
-							//console.log(
-							  //"maximo:  "+max )
-				max= max-128
-				var dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+
+								//El piso es 128
+								max= max-128;
+				//console.log("maximo:  "+max )
+				 var dB=20*Math.log(Math.max((max/127), Math.pow(10,-42/20)))/Math.LN10;
+				//var dB= 20*Math.log(max/127)
 				//Dibujamos en el canvas
 				//Dibujamos el  dedegradadoado
 				var degradado = ctx.createLinearGradient(w/10,h*0.2,w/10,h*0.95);
@@ -613,13 +618,16 @@ if (suena) {
 				ctx.fillStyle="black";
 				ctx.font = "Arial 14pt";
 				ctx.textAlign = "center";
+				//Dibujamos los dB en la parte baja del indicador de nivel
 				ctx.fillText(Math.round(dB*100)/100+' dB',w/2,h-h*0.025);
+				//Rellenamos el rectánguloteniendo en cuenta los márgenes;
 				ctx.fillText(-6, 8, h*0.8*(-6/-42));
 				ctx.fillText(-12, 8, h*0.8*(-12/-42));
 				ctx.fillText(-24, 8, h*0.8*(-24/-42));
-
-		
-};// FIN Rocesador
+				//console.log ("reduccion"+misNodos.compresor.reduction.value)
+				var reduccion=misNodos.compresor.reduction.value.toFixed(2);
+				document.querySelector('#reduccion').innerHTML= reduccion;
+};// FIN Procesador
  
 			
 			
@@ -646,7 +654,7 @@ function dibujaEspectro(){
 				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
                 ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
             }
-	
+	requestAnimationFrame(dibujaEspectro.bind(this))
 	}
 
 function cambiaResolucion_mas(){
@@ -665,31 +673,35 @@ function cambiaResolucion_mas(){
 
 function potenciometro(slider) {
              if(contextoDeAudio.activeSourceCount > 0) {
-                if(slider.id == 'pan' || slider.id == 'pany') {
-                    var panX = document.querySelector('#pan').value;
-               		var panY = document.querySelector('#pany').value;	
-                    misNodos.panner.setPosition(panX, panY, 0);
-                }			
-                else if(slider.id == 'volumen') {
+                
+                 if(slider.id == 'volumen') {
                     var volumen = slider.value;
                     misNodos.volumen.gain.value = volumen;
+					  document.querySelector('#varvol').innerHTML= volumen;
+					  dBs = 20 * Math.log(volumen) / Math.LN10;
+        			  document.querySelector('#dBvol').innerHTML = dBs.toFixed(2);
                 }
 				else if(slider.id == 'umbral') {
                     var umbral = slider.value;
                     misNodos.compresor.threshold.value = umbral;
 					document.querySelector('#umbral-valor').innerHTML= umbral;
-					//Reducción en dB
-					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
-					document.querySelector('#reduccion').innerHTML= reduccion;
+					
                 }
 				else if(slider.id == 'ratio') {
                     var ratio = slider.value;
 					misNodos.compresor.ratio.value = ratio;
 					document.querySelector('#ratio-valor').innerHTML= ratio;
-					//Reducción en dB
-					var reduccion= misNodos.compresor.reduction.value.toFixed(2);
-					document.querySelector('#reduccion').innerHTML= reduccion;
-					
+
+                }else if(slider.id == 'ataque') {
+                    var ataque = slider.value;
+					misNodos.compresor.attack.value = ataque;
+					document.querySelector('#ataque-valor').innerHTML= ataque;
+
+                }else if(slider.id == 'liberacion') {
+                    var liberacion = slider.value;
+					misNodos.compresor.release.value = liberacion;
+					document.querySelector('#liberacion-valor').innerHTML= liberacion;
+
                 }
 				
             }

@@ -389,15 +389,99 @@ function potenciometro(slider) {
         //dB de filtro de graves
         misNodos.graves.gain.value = dBg;
         console.log('misNodos.agudos.gain: ', dBg);
-        document.queryS郈ǌ늠뿿
-de("Pulsa el botón reproducir");
+        document.querySelector('#valorgravesdB').innerHTML = dBg;
+    } else if (slider.id == 'agudos') {
+        var frec = slider.value;
+        //Ajuste de frec para filtro de agudos
+        misNodos.agudos.frequency.value = frec;
+		indice= Math.round(frec/nyquist*NumerodeBarras);
+        document.querySelector('#valorfagudos').innerHTML = frec;
+    } else if (slider.id == 'agudosdB') {
+        var dBa = slider.value;
+        //dB ganancia en agudos
+        misNodos.agudos.gain.value = dBa;
+        console.log('misNodos.agudos.gain ', dBa);
+        document.querySelector('#valoragudosdB').innerHTML = dBa;
+    }
+}
+
+function activaFiltro(elemento) {
+    miFuente.disconnect(0);
+    misNodos.paso_bajo.disconnect(0);
+    misNodos.agudos.disconnect(0)
+    misNodos.graves.disconnect(0)
+    // Verifica el check.
+    if ($('#g1').prop('checked') && $('#a1').prop('checked')) {
+        $('input#c1').attr('checked', false);
+        var frec_graves = document.querySelector('#graves').value;
+        var gan_graves = document.querySelector('#gravesdB').value;
+        var frec_agudos = document.querySelector('#agudos').value;
+        var gan_agudos = document.querySelector('#agudosdB').value;
+        misNodos.graves.gain = gan_graves;
+        misNodos.graves.frequency.value = frec_graves;
+        misNodos.agudos.gain = gan_agudos;
+        misNodos.agudos.frequency.value = frec_agudos;
+        miFuente.connect(misNodos.graves);
+        misNodos.graves.connect(misNodos.agudos);
+        misNodos.agudos.connect(misNodos.volumen)
+        misNodos.volumen.connect(misNodos.analizador)
+        misNodos.volumen.connect(contextoDeAudio.destination);
+    } else if ($('#a1').prop('checked') && ($('#g1').prop('checked') == false)) {
+        $('input#c1').attr('checked', false);
+        var frec_agudos = document.querySelector('#agudos').value;
+        var gan_agudos = document.querySelector('#agudosdB').value;
+        misNodos.agudos.gain = gan_agudos;
+        misNodos.agudos.frequency.value = frec_agudos;
+        miFuente.connect(misNodos.agudos);
+        misNodos.agudos.connect(misNodos.volumen)
+        misNodos.volumen.connect(misNodos.analizador)
+        misNodos.volumen.connect(contextoDeAudio.destination);
+    } else if ($('#g1').prop('checked') && ($('#a1').prop('checked') == false)) {
+        $('input#c1').attr('checked', false);
+        var frec_graves = document.querySelector('#graves').value;
+        var gan_graves = document.querySelector('#gravesdB').value;
+        misNodos.graves.gain = gan_graves;
+        misNodos.graves.frequency.value = frec_graves;
+        miFuente.connect(misNodos.graves);
+        misNodos.graves.connect(misNodos.volumen)
+        misNodos.volumen.connect(misNodos.analizador)
+        misNodos.volumen.connect(contextoDeAudio.destination);
+    } else if ($('#c1').prop('checked')) {
+        //Desconectamos el resto de filtros para escuchar el efecto correctamente
+        $('input#g1').attr('checked', false);
+        $('input#a1').attr('checked', false);
+        // Conectar con filtro inicializado en 0.5.
+        document.querySelector('#lowpass').value = 0.5;
+        //var lowpass = document.querySelector('#lowpass').value;
+        document.querySelector('#valorlowpass').innerHTML = 500;
+        misNodos.paso_bajo.frequency.value = 500;
+        var lowpassq = document.querySelector('#lowpassq').value * 30;;
+        misNodos.paso_bajo.Q.value = lowpassq;
+        //Compruebo graves 
+        miFuente.connect(misNodos.paso_bajo);
+        misNodos.paso_bajo.connect(misNodos.volumen);
+        misNodos.volumen.connect(misNodos.analizador)
+        misNodos.analizador.connect(contextoDeAudio.destination);
+    } else {
+        // Conectar Directamente.
+        miFuente.connect(misNodos.volumen);
+        misNodos.volumen.connect(misNodos.analizador)
+        misNodos.analizador.connect(contextoDeAudio.destination);
+    }
+}
+
+function pulsaElBotonReproducir() {
+    var provisional = document.createElement('div');
+    provisional.setAttribute('id', 'provisional');
+    var parrafo = document.createElement("h1");
+    var contenido = document.createTextNode("Pulsa el botón reproducir");
     provisional.appendChild(parrafo);
     parrafo.appendChild(contenido);
     var espectro = document.getElementById('espectro');
     var papa = espectro.parentNode;
     papa.insertBefore(provisional, espectro);
     document.querySelector('#provisional').appendChild(parrafo);
-}                            
+}                         
 </code></pre></div>
       </div>
       <div class="modal-footer">
