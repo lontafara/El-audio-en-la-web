@@ -144,6 +144,14 @@
            </div>   
    
  <p>  Con las variables <code>FRECUENCIA</code> y <code>ESCALA</code> ajustamos el valor de los potenciómetros o controles. A continuación creamos los nodos con sus parámetros básicos y los conectamos entre sí. De la fuente, que en este caso viene definida por nuestro nodo oscilador <code> misNodos.osc = contextoDeAudio.createOscillator()</code> al destino <code>contextoDeAudio.destination</code>. El nodo oscilador genera formas de onda periodicas. y cuenta con  algunos atributos, como la frecuencia <code>frequency</code> o el <code>detune</code>, ajuste fino de frecuencia en partes porcentuales.</p>
+
+<p>El nodo analizador es el encargado de muestrear la señal en el dominio del tiempo y proveernos un array de 1024 muestras para graficarlo mediante la declaración:</p>
+<div class="highlight">
+<pre class="prettyprint"><code class="language-js">
+var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
+misNodos.analizador.getByteTimeDomainData(muestras);
+</code></pre></div>
+<p>A continuación se utiliza la API <code>requestAnimationFrame</code> para visualizar la señal y hacer algunos cálculos, como el nivel de dB de referencia de la señal.
    
    </div>
    <!-- Button trigger modal -->

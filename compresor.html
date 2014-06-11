@@ -390,9 +390,9 @@ function pulsaElBotonReproducir() {
         <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
         
       </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+    </div>
+  </div>
+</div>
             
 
 
@@ -403,7 +403,8 @@ function pulsaElBotonReproducir() {
   </div><!--row -->         
       <div class="row">
             <div class="col-12 col-sm-12 col-lg-12">        
-              <p>Para crear un <strong>nodo compresor de señal</strong> utilizamos la interfaz <code>createDynamicsCompressor</code> a la que podemos pasar los siguientes atributos para ajustar la dinámica de nuestra señal: </p> <div class="well pull-left" style="margin-right:12px">
+              <p>Para crear un <strong>nodo compresor de señal</strong> utilizamos la interfaz <code>createDynamicsCompressor</code> a la que podemos pasar los siguientes atributos para ajustar la dinámica de nuestra señal: </p> 
+              <div class="well " >
               <dl> 
               <dt>threshold // en Decibelios</dt>
               <dd>Valor en decibelios sobre los que la compresión comienza a hacer efecto</dd>
@@ -419,7 +420,21 @@ function pulsaElBotonReproducir() {
                   <dd>Tiempo para incrementar la ganancia 10 dBs</dd>
               <dd></dd>
               </dl>
-              </div><!-- WEll -->  
+             
+              
+              </div><!-- well -->
+               <p>Para medir la reducción del compresor de forma gráfica, se ha creado un medidor de nivel de dB que grafica la señal de audio a la salida del compresor. Mediante un cálculo matemático básico se escalan los datos de amplitud de la señal de valores lineales a logarítmicos, en decibelios. </p>
+<p>Para realizar esta operación se utiliza el nodo de procesado de Javascript o <code>ScriptProcessorNode</code>, el cual permite trabajar los datos de la señal de audio en las mismas coordenadas de tiempo que nuestro Contexto de Audio y realizar cualquier tipo de operación matemática de forma eficiente.<p> A partir el método <code>.onaudioprocess</code>, que permite a nuestra función de procesado JavaScript ejecutarse a la par que la cadena de audio, se han extraído porciones de la señal de audio en el dominio del tiempo, en intervalos de 1024 muestras.</p>
+  
+  
+              <div class="highlight">
+         
+            <pre class="prettyprint"><code class="language-js">  
+// Crea una instancia de Audio Buffer con los datos de audio a la entrada
+// Devuelve un Float 32 Array con los valores de la PCM entre -1 y 1
+misNodos.procesador.onaudioprocess = function(audio){
+var   entrada = audio.inputBuffer.getChannelData(0)
+</code></pre></div>  
             </div><!--/span-->
             
            

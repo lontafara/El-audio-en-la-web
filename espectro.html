@@ -78,14 +78,22 @@
           <p class="pull-right visible-xs">
             <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button> </p>
           <div class="jumbotron" id="marco">
-             <div id="marco"><div id="provisional"></div><canvas id="espectro"></canvas></div>
+             <div id="provisional"></div><canvas id="espectro"></canvas>
              
           </div>
           <div class="row">
-            <div class="col-12 col-sm-12 col-lg-12">
             
-            <div class="col-4 col-sm-4 col-lg-4 pull-right" style="margin-bottom:12px">
-              <h4>Controles</h4>
+            
+            
+            
+<div class=" col-lg-8 col-md-8 col-sm-12 ">            
+            <h4>Descripción</h4>
+              <p> El <a href="http://www.w3.org/TR/webaudio/#AnalyserNode" title="nodo analizador web audio api" target="_blank">Nodo Analizador</a> proporciona en tiempo real datos de la fuente de audio en el dominio del tiempo y en el de la frecuencia. Estos nodos no modifican el sonido y pueden ser colocados donde queramos en nuestra cadena de audio.</p>
+<p>El Análisis de audio nos ayuda a comprender mejor cómo será el sonido que vamos a escuchar, de hecho una de las aplicaciones principales de el <a href="http://www.w3.org/TR/webaudio/#AnalyserNode" title="nodo analizador web audio api" target="_blank">Nodo Analizador</a> es visualizar el sonido.  </p>   
+              
+<p>Los resultados que muestra están basados en un análisis FFT de un tamaño de buffer determinado. Éstos son los principales métodos y atributos del nodo analizador: </p>
+</div>
+<div class="col-4 col-sm-12 col-lg-4 ">              <h4>Controles</h4>
                  <ul class="list-unstyled">      
             		 <li><strong>Volumen:</strong></li>
                		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valorvol">1</span></li>
@@ -100,25 +108,27 @@
   Ver Código fuente
 </button>
 </div><!--/span-->
-            
-            
-              <h4>Descripción</h4>
-              <p> El <a href="http://www.w3.org/TR/webaudio/#AnalyserNode" title="nodo analizador web audio api" target="_blank">Nodo Analizador</a> proporciona en tiempo real datos de la fuente de audio en el dominio del tiempo y en el de la frecuencia. Estos nodos no modifican el sonido y pueden ser colocados donde queramos en nuestra cadena de audio.</p>
-      
-              
-<p>Los resultados que muestra están basados en un análisis FFT de un tamaño de buffer determinado. Podemos agregar algunos atributos a este nodo para controlar el modo en que se comporta, por ejemplo:</p>
-<div class="well pull-left" style="margin-right:12px">
-<dl>           
-<dt>fftSize</dt>
-<dd>Define el tamaño del buffer que se usará para realizar el análisis. ha de ser potencia de 2. Valores altos aportan más resolución al procesado y tambien más consumo recursos. </dd>
-<dt>frequencyBinCount</dt>
-<dd>propiedad de lectura con el valor constante de fftSize/2.</dd>
+ 
+<div class="well col-12 col-sm-12 col-lg-12">
+          
+  <p><strong>Atributos</strong></p>
+  <ul>
+    <li><strong>Tamaño de la FFT: </strong>será tamaño de la transformada de Fourier que utilicemos para hacer el análisis en el dominio de la frecuencia. Deberá ser potencia de 2, de 32 a 2048.<strong> </strong></li>
+    <li><strong>Porciones de frecuencia:</strong><strong> </strong><code>FrecuencyBinCount</code>, los datos de frecuencia disponibles, la mitad del valor del tamaño de la FFT.<strong> </strong></li>
+    <li><strong>Decibelios; Min y Max: </strong>El mínimo  y máximo nivel de potencia en el rango de la escala de la FFT para la conversión de valores de byte sin signo.<strong> </strong></li>
+    <li><strong>Constante de suavizado:</strong><strong> </strong>Un valor entre 0 y 1 que representa el promedio de tiempo entre una muestra  del analizador y la siguiente.<strong> </strong>Nos servirá para visualizar el audio en frecuencia de forma más suave, entre otras cosas.<strong> </strong></li>
+  </ul>
+  <p><strong>Métodos y Parámetros</strong></p>
+  <ul>
+    <li><strong>getFloatFrequencyData: </strong>Copia los datos de audio en un array de flotantes. El tamaño de la Proción será el mismo que el valor del atributo <code>frequencyBinCount. </code>El parámetro<em> array </em>será donde se copien los datos de frecuencia. <strong></strong></li>
+    <li><strong>getByteFrequencyData: </strong>Este método copia los datos de frecuencia en un array o vector de bytes de enteros, de longitud <code>FrequencyBinCount</code>  también contará con su parámetro <em>array, </em>para acceder al valor.<strong></strong></li>
+    <li><strong>getTimeDomainData: </strong>Copia los datos de la forma de onda en el dominio del tiempo en una cadena de bytes de enteros, el tamaño será el de el atributo <code>fftSize</code>, o tamaño de la transformada.<strong></strong></li>
+  </ul>
 
-<dt>smoothingTimeConstant</dt>
-<dd>Es un valor entre 0 y 1. Contra más nos acercamos a 1 obtendremos un promediado más lento y una visualización mas suave. Valores cercanos a cero indican fluctuaciones de resultados rápidas.</dd>
-</dl>
-</div>              
-              
+             
+ </div>
+ 
+ <div class="col-12 col-sm-12 col-lg-12">             
 <p>En este ejemplo conectamos el Nodo Analizador después de un Nodo de Ganancia, nos permite visualizar el espectro de la señal. El método <code>getByteFrequencyData</code> copia los datos de frecuencia al array que le pasemos. En este caso un array de 512 valores enteros cuantificados con 8 Bits, la mitad del tamaño de nuestra resolución de la FFT (1024) y obtenido a partir del atributo del analizador <code>frequencyBinCount</code>. El cual nos devuelve una constante: el valor de la FFT/2. Cada muestra se almacena en un Byte (256 niveles). El piso es 0 = 0dB.</p>
               <p>Una vez establecida la cadena de audio y su contexto, el código sería algo como esto:</p>
               <div class="highlight">
@@ -129,8 +139,8 @@
             <p>Para graficar los valores de nuestra cadena de datos creamos una función de dibujo utilizando el elemento <code>&lt;canvas&gt;</code> que recorra este array de datos y los imprima en pantalla </p>
            
            
-           
-            </div><!--/spanTEXTO-->
+</div>           
+            
             
 <!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -311,11 +321,11 @@ function pulsaElBotonReproducir() {
       <hr>
 
       <footer>
-        <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
+        <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png" alt="git"/></a> </p>
       </footer>
 
     </div><!--/.container-->
-<script type = "text/javascript">
+<script type="text/javascript">
 //Pulsa el botón reproducir!!
 var parrafo = document.createElement("h1");
 var contenido = document.createTextNode("Pulsa el botón reproducir");
