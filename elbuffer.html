@@ -29,7 +29,7 @@
      <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
    <style>
  #provisional{ position:absolute;}
- 
+  p {text-align:justify;}
  </style>
  <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -81,6 +81,42 @@
           
           <div class="row">
             <div class="col-12 col-sm-12 col-lg-12">
+            
+            
+            
+            <h2>El Buffer de Audio</h2>
+<p>Según su especificación, esta interfaz representa la capacidad de memoria de audio a utilizar para procesar la señal.  El formato de codificación que utiliza es una PCM lineal de 32 Bits normalizada a +-1, y puede contener uno o más canales. </p>
+
+<h4>Atributos</h4>
+<ul>
+<li><strong>Frecuencia de muestreo</strong>:  o sampleRate, la frecuencia de muestreo de la señal PCM de audio en muestras por segundo</li>
+<li><strong>Longitud</strong>: Tendremos acceso a la longitud de la la señal PCM de audio en muestras o samples mediante el atributo <code>length</code>.</li>
+<li><strong>Duración</strong>:  Duración de la señal de audio PCM en segundos.</li>
+<li><strong>Numero de canales de audio</strong>: número de canales del buffer.</li>
+</ul>
+<h4>Métodos y parámetros</h4>
+<ul>
+<li><strong>getChannel</strong>: este método nos devuelve un vector o array de 32 bits de valores reales (float) que representa la los datos de la señal PCM de audio de un canal específico</li>
+</ul>
+
+<h3>Nodo Fuente de Buffer de Audio</h3>
+<p>La interfaz representa una fuente de audio de la memoria del Buffer de Audio. Es útil para reproducir fragmentos de audio cortos en un entorno que requiera flexibilidad. Iniciaremos los sonidos con el método <code>start()</code> y la salida representará el flujo de datos de audio. Cuando El buffer de datos haya sido reproducido por completo, se cortará la reproducción.</p>
+
+<h4>Atributos</h4>
+<ul>
+<li><strong>Buffer</strong>: Representa la porción de audio a reproducir.</li>
+<li><strong>Ratio de reproducción</strong>: o <code>playBackrate</code>, para definir la velocidad con que se renderiza la cadena de audio.</li>
+<li><strong>Loop</strong>: Indica si el audio se repite definidamente.</li>
+<li><strong>Comienzo y fin del loop</strong>: con los atributos <code>loopStart</code> y <code>loopEnd</code>. Un valor opcional en segundos.</li>
+</ul>
+<h4>Métodos y parámetros</h4>
+<ul>
+<li><strong>Start</strong>: Lo utilizamos para programar la reproducir el sonido. Podemos especificar cuándo se reproducirá el sonido, con el parámetro <code>when,</code> en segundos, en la coordenada de tiempo actual del contexto de audio, la que podemos extraer con <code>AudioContext.currentTime</code>. También podremos especificar un retraso con el parámetro <code>offset</code> y una duración, con duration.</li>
+<li><strong>Stop</strong>: Describe a qué tiempo el sonido dejará de reproducirse. En la misma coordenada de tiempo del Contexto de Audio, podremos ejecutarlo siempre después de un <code>start()</code></li>.
+</li>
+     </ul>       
+            
+            
               <h2>Cargando sonidos</h2>
                <p> La Web Audio API utiliza un <code>AudioBuffer</code> para los sonidos de corta y media longitud. El enfoque básico de carga es el uso de XMLHttpRequest, una petición vía http al servidor, para buscar los archivos de sonido.</p>
 
@@ -120,7 +156,7 @@
 <p>Cuando <code>decodeAudioData()</code> ha terminado, se llama a una función de devolución que proporciona los datos de audio PCM decodificado como AudioBuffer.
 </p>  
 <p>El siguiente fragmento de código muestra el proceso general para reproducir un sonido:</p>
-<ul><li>Cargamos el sonido</li><li>creamos una fuente de audio con los datos contenidos en el buffer con el método  <code>createBufferSource</code>.</li><li>Conectamos la fuente al destino, en este caso el nodo <code>contextoDeAudio.destination</code> que representa el final de la cadena de audio y será lo que escuchemos en los altavoces del dispositivo.</li></ul>
+<ol><li>Cargamos el sonido</li><li>Creamos una fuente de audio con los datos contenidos en el buffer con el método  <code>createBufferSource</code>.</li><li>Conectamos la fuente al destino, en este caso el nodo <code>contextoDeAudio.destination</code> que representa el final de la cadena de audio y será lo que escuchemos en los altavoces del dispositivo.</li></ol>
 <div class="highlight">
                <pre class="prettyprint"><code class="language-js">
         // Damos la instrucción de ejeuctar inciar(); más adelante

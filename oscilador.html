@@ -28,7 +28,7 @@
      <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
    <style>
  #provisional{ position:absolute;}
- 
+  p {text-align:justify;}
  </style>
  <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -77,43 +77,61 @@
           <p class="pull-right visible-xs">
             <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Cambiar navegación</button>
           </p>
-          <div class="jumbotron" id="marco">
+          <div class="jumbotron">
             <div id="marco"><div id="provisional"><h1>Pulsa el botón reproducir</h1></div><canvas id="canvas"></canvas></div>
           </div>
           <div class="row">
-            <div class="col-6 col-sm-6 col-lg-4">
+            <div class="col-4 col-sm-4 col-lg-4">
               <h4>Descripción</h4>
-              <p> El método <code>getByteTimeDomainData</code> copia los datos de la forma de onda al array que le pasemos. En este caso un array  del tamaño del buffer: 512 muestras, la mitad del tamaño de nuestra resolución de la FFT (1024). Cada muestra se almacena en un Byte (256 niveles). El piso es 128 = 0dB.</p>
-            </div><!--/span-->
-            <div class="col-6 col-sm-6 col-lg-4">
-              <h4>Controles</h4>
-                 <ul class="list-unstyled">      
-            		
+             <p> Con este nodo podremos generar una fuente de audio con una forma de onda periódica. También nos permitirá generar tonos  de frecuencia arbitraria.</p>
+<p>Los osciladores son un elementos básicos en la síntesis de audio. Nuestro nodo oscilador, comenzará a emitir cuando le apliquemos el método <code>start()</code>, y contaremos con varios atributos para variar la forma de onda y la frecuencia, e incluso un detune para  hacer un ajuste fino de frecuencia.</p>
+</div><!--/span-->
+              
+              
+              <div class="col-4 col-sm-4 col-lg-4">
+               <div class="bs-callout bs-callout-info" >
+              <h4>Nodo Oscilador</h4>
+                <ul class="list-unstyled">      
              		<li><p><strong>Frecuencia:</strong></li>
             		<li> <input id="freq" onchange="potenciometro(this)" type="range" min="60" max="8000" step="1" value="440" /> &nbsp;<span id="valorfreq">440</span> &nbsp;Hz</p></li>
-            		 <li><p><strong>Volumen:</strong></li>
-               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.01" value="0.2" />&nbsp;x &nbsp;<span id="valorvol">0,02</span></p></li>
-            </ul>
-              <p><input id="osc" onclick="Boton(this)" type="button"  class="btn btn-info" value="Reproducir" /></p>
-            </div><!--/span-->
-            <div class="col-6 col-sm-6 col-lg-4">
-              <h4>Magnitudes</h4>
-                <ul class="list-unstyled">      
-                        
-                	<li>Amplitud de la  muestra:  &nbsp;<span id="maximo">0</span></li>
+            		 <li><p><strong>Detune<sub>&nbsp;CENTS</sub>:</strong></li>
+            		<li> <input id="detune" onchange="potenciometro(this)" type="range" min="-100" max="100" step="5" value="0" /> &nbsp;<span id="valorfreq">440</span> &nbsp;CENTS</p></li>
+            		 <li><p><strong>Forma de onda:</strong></li>
+                     <li><select onchange="potenciometro(this)" id="tipoonda">
+                      <option value="sine">Senoidal</option>
+                      <option value="square">Cuadrado</option>
+                      <option value="triangle">Triangulo</option>
+                      <option value="sawtooth">Sierra</option>
+                        </select>
+                        </li>     
+                	          
+             
+            
+				</div>
+             </div><!--/span-->
+            
+            
+            <div class="col-4 col-sm-4 col-lg-4 bs-example">              
+                 <ul class="list-unstyled">   
+            		<li> <p><button id="osc" onclick="Boton(this)" type="button"  class="btn btn-info" value="Reproducir" />Reproducir <span  id="icono" class="glyphicon glyphicon-play"></span></button></p></li>
+
+                   <li><p><strong><span class="glyphicon glyphicon-volume-up"></span>&nbsp;Volumen:</strong></p>
+               	 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.01" value="0.2" />&nbsp;x &nbsp;<span id="valorvol">0,02</span></p></li>
+                   <li>Amplitud de la  muestra:  &nbsp;<span id="maximo">0</span></li>
                 	<li>El valor de ganancia&nbsp; es:  &nbsp;<span id="dB">0</span> &nbsp;dB</li>
                 	<li>Al aplicar el factor de ganancia de 0.5 obtenemos -6dB</li>
-                	<li>20log<sub>10</sub>(0,5) =  &nbsp;<span id="dBs"></span> &nbsp;dB</li></ul>            
+                	<li>20log<sub>10</sub>(0,5) =  &nbsp;<span id="dBs"></span> &nbsp;dB</li> 
+                   <li><p> <button class="btn btn-warning " data-toggle="modal" data-target="#myModal">Ver Código fuente</button></p></li>
+            </ul>
              
-             	<button class="btn btn-warning " data-toggle="modal" data-target="#myModal">Ver Código fuente</button>
-
-             </div><!--/span-->
+            </div><!--/span-->
+            
            
           </div><!--/row-->
           
       <div class="row">
             <div class="col-12 col-sm-12 col-lg-12">    
-          
+          <p>En este ejemplo, para visualizar la forma de onda, utilizamos el método <code>getByteTimeDomainData</code>, que copia los datos de la forma de onda al array que le pasemos. En este caso un array  del tamaño del buffer: 512 muestras, la mitad del tamaño de nuestra resolución de la FFT (1024). Cada muestra se almacena en un Byte (256 niveles). El piso es 128 = 0dB.</p>
            <div class="highlight">
                <pre class="prettyprint"><code class="language-js">
     function playOsc() {
@@ -151,7 +169,7 @@
 var muestras = new Uint8Array(misNodos.analizador.frequencyBinCount);
 misNodos.analizador.getByteTimeDomainData(muestras);
 </code></pre></div>
-<p>A continuación se utiliza la API <code>requestAnimationFrame</code> para visualizar la señal y hacer algunos cálculos, como el nivel de dB de referencia de la señal.
+<p>A continuación se utiliza la API <code>requestAnimationFrame</code> para visualizar la señal y hacer algunos cálculos, como el nivel de dB de referencia de la señal. Pulsa el botón <span class="label label-warning">explorar código</span> para ver con detalle el proceso de visualización.</p>
    
    </div>
    <!-- Button trigger modal -->
@@ -314,10 +332,11 @@ function potenciometro(slider) {
       <hr>
 
       <footer>
-       <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
+       <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png" alt="Lontafara on git"/></a> </p>
       </footer>
 
     </div><!--/.container-->
+
 <script type="text/javascript">
 var miFuente, misNodos = {},
     espectro, max = 0,
@@ -326,14 +345,19 @@ var suena = false;
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext)();
 // variables de dibujo
 
+	
 function Boton(button) {
     if (!suena) {
         playOsc();
-        button.value = "Parar Sonido";
+		$('#osc').html('Pausar&nbsp;');
+        //$(this).value = "Parar Sonido";
+		var parrafo = document.getElementById("provisional");
+       parrafo.parentNode.removeChild(parrafo);
         suena = true;
     } else {
         misNodos.osc.stop(0);
-        button.value = "Reproducir";
+		$('#osc').html('Reproducir&nbsp;');
+        pulsaElBotonReproducir();
         suena = false;
     }
 }
@@ -359,8 +383,7 @@ function playOsc() {
     // reproducir ahora (0 segundos desde ahora)
     requestAnimationFrame(visualizar.bind(this));
     //Borrar texto
-    var parrafo = document.getElementById("provisional");
-    parrafo.parentNode.removeChild(parrafo);
+    
 }
 visualizar = function() {
     var canvas = document.querySelector('#canvas');
@@ -420,13 +443,33 @@ function potenciometro(slider) {
             var FREQ = slider.value;
             misNodos.osc.frequency.value = FREQ;
             document.querySelector('#valorfreq').innerHTML = FREQ;
-        } else if (slider.id == 'volumen') {
+		 }else if (slider.id == 'detune') {
+            var detune = slider.value;
+            misNodos.osc.detune.value = detune;
+            document.querySelector('#valordetune').innerHTML = detune;	
+		 }else if (slider.id == 'tipoonda') {
+		    //Seleccionamos entre los tipos de forma de onda del oscilador.
+			misNodos.osc.type=slider.value;
+			
+		} else if (slider.id == 'volumen') {
             var volumen = slider.value;
             misNodos.ganancia.gain.value = volumen;
             document.querySelector('#valorvol').innerHTML = volumen;
         }
     }
 }
+function pulsaElBotonReproducir() {
+    var provisional = document.createElement('div');
+    provisional.setAttribute('id', 'provisional');
+    var parrafo = document.createElement("h1");
+    var contenido = document.createTextNode("Pulsa el botón reproducir");
+    provisional.appendChild(parrafo);
+    parrafo.appendChild(contenido);
+    var espectro = document.getElementById('marco');
+    var papa = espectro.parentNode;
+    papa.insertBefore(provisional, espectro);
+    document.querySelector('#provisional').appendChild(parrafo);
+} 
 </script>
     <!-- Bootstrap core JavaScript
     ================================================== -->

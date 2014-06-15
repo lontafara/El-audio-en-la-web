@@ -29,7 +29,7 @@
      <script type="text/javascript"  src="google-code-prettify/prettify.js"></script>
  <style>
  #provisional{ position:absolute;}
- 
+ p {text-align:justify;}
  </style>
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -43,7 +43,7 @@
 </script>
   </head>
 
-  <body onload="prettyPrint()">
+  <body onload="prettyPrint();inicializar();">
     <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
       <div class="container">
         <div class="navbar-header">
@@ -78,25 +78,37 @@
           <p class="pull-right visible-xs">
             <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Despilega el menú lateral</button> </p>
           <div class="jumbotron" id="marco">
-             <div id="marco"><div id="provisional"></div><canvas id="espectro"></canvas></div>
+             <div id="provisional"></div><canvas id="espectro"></canvas>
              
           </div>
+          <div class="progress progress-striped active">
+              <div id="progreso"class="progress-bar progress-bar-info"  role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                <span class="sr-only">% Completo</span>
+               </div>
+			</div>
           <div class="row">
-            <div class="col-12 col-sm-12 col-lg-12">
+            <div class="col-4 col-sm-4 col-lg-4">
             
-            <div class="col-4 col-sm-4 col-lg-4 pull-right" style="margin-bottom:12px">
-              <h4>Controles</h4>
-                 <ul class="list-unstyled"> 
-                 <li>Posición relativa del oyente (-1,1)</li>     
-            		 <li><span>Pan L- R:</span></li>
-                      <li><input id="pan" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valorx">0</span></li>
-                      <li><span>Pan  eje Y:</span></li>
-                      <li><input id="pany" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valory">0</span></li>      
-                      <li><span>Pan  eje Z:</span></li>
-                      <li><input id="panz" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valorz">0</span></li>
-                      <li><span>Volumen:</span><li>
-               		 <li><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="2" step="0.01" value="1" />&nbsp;x &nbsp;<span id="valorvol">1</span></li>
-                  <!--   <li>Orientación de la fuente (-1,1)</li>     
+            <!--/span-->
+            
+            
+              <h4>Descripción</h4>
+              <p> La percepción espacial del sonido es un elemento importante en el desarrollo de juegos o aplicaciones de audio. La Web Audio API nos permite a través del <code>AudioPannerNode</code> trabajar la espacialidad  del sonido. Mediante sus métodos y atributos podemos parametrizar la posición de la fuente y conseguir un ambiente sonoro en 2D o incluso en 3D. </p>
+
+
+</div>
+<div class="col-4 col-sm-4 col-lg-4 ">
+<div class="bs-callout bs-callout-info">
+<h4>Posición relativa del oyente </h4>    
+            		 <dl class="nav nav-pills">
+                     <dt><span>Pan L- R:</span>
+                      <dd><input id="pan" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valorx">0</span></p></dd>
+                      <dt><span>Pan  eje Y:</span></dt>
+                      <dd><input id="pany" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valory">0</span></p></dd>      
+                      <dt><span>Pan  eje Z:</span></dt>
+                      <dd><input id="panz" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valorz">0</span></p></dd>
+                      </dl>
+  <!--   <li>Orientación de la fuente (-1,1)</li>     
             		 <li><span>Eje X:</span></li>
                       <li><input id="ejex" onchange="potenciometro(this)" type="range" min="-1" max="1" step="0.01" value="0" /> &nbsp;<span id="valorejex">0</span></li>
                       <li><span>Eje Y:</span></li>
@@ -107,44 +119,58 @@
                		 <li><input id="angulo" onchange="potenciometro(this)" type="range" min="0" max="360" step="1" value="90" />&nbsp;x &nbsp;<span id="valorangulo">90</span></li>
                      <li><span>Atenuación fuera del ángulo:</span><li>
                		 <li><input id="atenuacion" onchange="potenciometro(this)" type="range" min="0" max="1" step="0.1" value="1" />&nbsp;x &nbsp;<span id="valoratenuacion">0</span></li> -->
-            </ul>
-              <p> <button id="play" class="btn btn-info btn-lg glyphicon glyphicon-play" onclick="playPause(this)" type="button" > Reproducir</button></p>
-                   
-        
-                	<p><button id="menos" type="button" class="btn " onClick="cambiaResolucion_menos();">-</button>&nbsp;<span id="resolucion"></span>&nbsp;<button type="button" id="mas" class="btn" onClick="cambiaResolucion_mas()">+</button></p><p><small>Tamaño de la muestra de frecuencia 2*∫</small></p>
-            
-            
-     <button class="btn btn-warning " data-toggle="modal" data-target="#myModal">
+         			 
+
+</div>
+</div>
+
+
+<div class="col-4 col-sm-4 col-lg-4 bs-example" >
+             
+                 <ul class="list-unstyled"> 
+                 <li> 
+              <p> <button id="play" class="btn btn-info " onclick="playPause(this)" type="button" >Reproducir <span  id="icono" class="glyphicon glyphicon-play"></span></button></p>
+           </li>   
+                       <li><p><strong><span class="glyphicon glyphicon-volume-up"></span>&nbsp;Volumen:</strong></p>
+                       
+               		 <p><input id="volumen" onchange="potenciometro(this)" type="range" min="0" max="3" step="0.01" value="1" />&nbsp;x <span id="varvol">1</span><sub>+<span id="dBvol">0</span>dB</sub></li>
+         
+        <li><p><span class="glyphicon glyphicon-resize-full"></span>&nbsp;<strong>Zoom&nbsp;</strong><a id="menos" type="button" class="label label-default" onClick="cambiaResolucion_menos();"><span class="glyphicon glyphicon-minus"></span></a>
+                     <a type="button" id="mas" class="label label-default" onClick="cambiaResolucion_mas()"><span class="glyphicon glyphicon-plus"></span></a></p>
+        <p><small>Tamaño de la muestra de frecuencia 2*∫</small>&nbsp;+<span id="resolucion"></span>&nbsp;</p>
+            </li>
+   <li> <p> <button class="btn btn-warning " data-toggle="modal" data-target="#myModal">
   Ver Código fuente
-</button>
-</div><!--/span-->
-            
-            
-              <h4>Descripción</h4>
-              <p> La percepción espacial del sonido es un elemento importante en el desarrollo de juegos o aplicaciones de audio. La Web Audio API nos permite a través del <code>AudioPannerNode</code> trabajar la espacialidad  del sonido. Mediante sus métodos y atributos podemos parametrizar la posición de la fuente y conseguir un ambiente sonoro en 2D o incluso en 3D. Si escuchas este ejemploc on tus auriculares estereo, verás que mediante los 3 controles del panner, podrás variar la percepción izquierda-derecha de la fuente (L-R) la posición enaltura (eje Y) y la posición relativa frente a ti, delate o detrás. (eje Z).</p>
+</button></p></li></ul>
 
-Profundizando en el <code>PannerNode</code> encontraremos aspectos que incrementan la complejidad de la percepción espacial del sonido, como:
+</div>
 
-<ul>  
-<li>Posición y orientación de las fuentes y los oyentes</li>
-<li>Parámetros asociados con los diagramas de radiación de las fuentes o conos de radiación</li>
-<li>Velocidades relativas de las fuentes y los oyentes</li>
+<div class="col-12 col-sm-12 col-lg-12">
+<p>Si escuchas este ejemplo con tus auriculares estéreo, advertirás que mediante los 3 controles espaciales del panner, podrás variar la percepción izquierda-derecha de la fuente (L-R) la posición enaltura (eje Y) y la posición relativa frente a ti, delate o detrás (eje Z).</p>
+<p>Profundizando en el <a target="_blank" href="http://www.w3.org/TR/2012/WD-webaudio-20120315/#AudioPannerNode-section">PannerNode</a> encontraremos atributos y métodos que incrementan la complejidad de la percepción espacial del sonido, como:</p>
+
+<ul> 
+<li>Constantes que definen e tipo de algoritmo o <code>panningModel</code> a utilizar en la espacialización, a elegir entre paneados equipotenciales o algoritmos complejos de alta calidad o HRTF. </li> 
+<li>Posición y orientación de las fuentes y los oyentes.</li>
+<li>Atributos asociados con fuentes direccionales, especificaremos, por ejemplo un <code>coneInnerAngle</code> o ángulo del conos de radiación, en el cual no habrá reducción de nivel.</li>
+<li>Métodos que determinan la posición, orientación relativas de las fuentes y los oyentes.</li>
+<li>El método <code>setVelocity</code> sirve para declarar el vector de velocidad de la fuente de audio, este vector controlará tanto la dirección como la velocidad en un entorno 3D y determinará la cantida de efecto doppler a aplicar.</li>
 </ul>
-
-<p>En el ejemplo hemos utilizado el método <code>setPosition(x, y, z);</code> que trae nuestro <code>AudioPannerNode</code> para conseguir espacialidad en la percepción del sonido. Podríamos haber utilizado la interfaz <code> AudioListener</code> que usa tambien un sistema cartesiano de coordenadas para establecer la posición relativa del oyente frente a la fuente.  </p>          
+<p>En el ejemplo hemos utilizado el método <code>setPosition(x, y, z);</code> del nodo de paneado o <code>AudioPannerNode</code> para conseguir espacialidad en la percepción del sonido. Podríamos haber utilizado la interfaz <code> AudioListener</code> que usa tambien un sistema cartesiano de coordenadas para establecer la posición relativa del oyente frente a la fuente, entre otras variables, y exteinde las posibilidades de la espacialización del sonido con la Web Audio API.</p>
+<p>El siguiente fragmento de código muestra cómo asignamos los valores de los sliders (aquí potenciómetros) HTML al método <code>setPosition</code> del nodo de Paneado. Así descriiremos la posición relativa de la fuente frente al oyente. Los valores oscilarán entre 1 y -1, teniendo como centro a posición (0,0,0).</p>          
       
 
               <div class="highlight">
          
             <pre class="prettyprint"><code class="language-js">
                       //creamos el panner
-          misNodos.panner = contextoDeAudio.createPanner();
+          panner = contextoDeAudio.createPanner();
           // Ajustamos los valores del nodo a los del potenciómetro
           // Panner
           var panX = document.querySelector('#pan').value;
           var panY = document.querySelector('#pany').value;
           var panZ = document.querySelector('#panz').value;
-          misNodos.panner.setPosition(panX, panY, panZ);
+          panner.setPosition(panX, panY, panZ);
           // x,y,z representan las coordenadas en el espacio del oyente
 
 			</code></pre></div>
@@ -166,186 +192,6 @@ Profundizando en el <code>PannerNode</code> encontraremos aspectos que increment
         <div class="highlight">
                <pre class="prettyprint"><code class="language-js">  
 
-		//Pulsa el botón reproducir!!
-		var parrafo = document.createElement("h1");
-		var contenido = document.createTextNode("Pulsa el botón reproducir");
-		parrafo.appendChild(contenido);
-		document.querySelector('#provisional').appendChild(parrafo);
-
-		var espectro = document.querySelector('#espectro');
-        var ctxe = espectro.getContext('2d');
-        var ancho = document.getElementById('marco').offsetWidth -80;
-		espectro.width= ancho;
-        espectro.height= 200;
-        var alto=200;
-		var ancho_barra;
-		var resolucion = 5;	
-		document.querySelector('#resolucion').innerHTML= resolucion;
-	//crea el contexto de audio
-		var miFuente, misNodos = {}, espectro,imprimedBL,imprimedBR;
-		var suena = false;	
-		var contextoDeAudio = new (window.AudioContext||window.webkitAudioContext)();
-		
-		var comienzo = 0;
- 		var startOffset = 0;
-
-	cargarSonido("audios/Huajara.mp3");
-	
-	
-		
-	
-	
-	 // CARGAMOS el archivo con petición asíncorna XMLHTTP
-     function cargarSonido(url) {
-        var peticion = new XMLHttpRequest();
-        peticion.open('GET', url, true);
-
-        // Cuando cargen los datos de audio:
-        peticion.responseType = 'arraybuffer';
-        peticion.addEventListener('load', bufferSound, false);
-        peticion.send();
-    
-	}
-	
-	
-     function bufferSound(event) {
-         var peticion = event.target;
-         var buffer = contextoDeAudio.createBuffer(peticion.response, false);
-         mibuffer = buffer;
-    }
-
-
-function playPause(){
-if (suena) {
-    // Stop
-	 var source = miFuente;
-         source.noteOff(0); 
-    startOffset += contextoDeAudio.currentTime - this.comienzo;
-    console.log('Pausado en', startOffset);
-    // Grabar posición donde se pausó.
-	document.querySelector('#play').innerHTML= 'Reproducir';
-	//Pulsa el botón reproducir!!
-    pulsaElBotonReproducir();
-
-  } else {
-	
-    comienzo = contextoDeAudio.currentTime;
-    console.log('comienza en', startOffset);
-    var source = contextoDeAudio.createBufferSource();
-     source.buffer = mibuffer;
-     source.loop = true;
-     source = cadenaDeAudio(source);
-            
-            // se puede pasar tambien contextoDeAudio.currentTime
-      suena==true;
-	//source.noteOn(0);
-     source.start(0, startOffset % source.buffer.duration);  
-	 
-      marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-      miFuente = source;
-     document.querySelector('#play').innerHTML= 'Pausar';
-	 var parrafo = document.getElementById("provisional");
-	 parrafo.parentNode.removeChild(parrafo);   
-
-  }
-  this.suena = !this.suena;
-}
-
- function cadenaDeAudio(source) {
-
-		    misNodos.volumen = contextoDeAudio.createGainNode();
-			misNodos.panner = contextoDeAudio.createPanner();
-		    misNodos.analizador = contextoDeAudio.createAnalyser();
-			//Analizador
-			misNodos.analizador.smoothingTimeConstant = 0.3;
-			misNodos.analizador.fftSize=1024;
-			misNodos.analizador.minDecibels = -120;
-  			misNodos.analizador.maxDecibels = 0;
-			
-			// Ajustamos los valores del nodo a los del potenciómetro
-            // Panner
-            var panX = document.querySelector('#pan').value;
-			var panY = document.querySelector('#pany').value;
-			var panZ = document.querySelector('#panz').value;
-			misNodos.panner.setPosition(panX, panY, panZ); // xy z representan las coordenadas en el espacio
-			
-			//ajustes de volumen
-			var volumen = document.querySelector('#volumen').value;
-			misNodos.volumen.gain.value = volumen;
-			
-			//Ruteo
-			source.connect(misNodos.volumen);
-
-			misNodos.volumen.connect(misNodos.panner)
-			misNodos.panner.connect(misNodos.analizador)			
-			misNodos.analizador.connect(contextoDeAudio.destination);
-			
-return source;			
-
- }
-
-function dibujaEspectro(){
-		
-		ctxe.clearRect(0, 0, ancho, alto);
-		
-		var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
-            misNodos.analizador.getByteFrequencyData(datos_frecuencia);
-			
-			var NumerodeBarras = Math.round(ancho / resolucion);
-            for (var i = 0; i < NumerodeBarras; i++) {
-				//for (var i = 0; i < (datos_frecuencia.length); i++) {
-                var magnitud = datos_frecuencia[i];
-                // ajustamos las variables para dibujarlas en el canvas
-				//dibujamos tipo hue ;)
-				var hue = i/datos_frecuencia.length * 360
-				ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-                ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
-            }
-	
-	}
-
-function cambiaResolucion_mas(){
-		resolucion = resolucion*2;	
-		document.querySelector('#resolucion').innerHTML= resolucion;
-	return resolucion;
-	}
-	
- function cambiaResolucion_menos(){
-		resolucion = resolucion/2;	
-		document.querySelector('#resolucion').innerHTML= resolucion;
-		return resolucion;
-	}	
-	
-
-
-function potenciometro(slider) {
-	  if(contextoDeAudio.activeSourceCount > 0) {
-                if(slider.id == 'pan' || slider.id == 'pany' || slider.id == 'panz') {
-                    var panX = document.querySelector('#pan').value;
-               		var panY = document.querySelector('#pany').value;
-					var panZ = document.querySelector('#panz').value;
-					
-                    misNodos.panner.setPosition(panX, panY, panZ);
-                }
-                 else if(slider.id == 'volumen') {
-                    var volumen = slider.value;
-                    misNodos.volumen.gain.value = volumen;
-                }
-	  }
-}
-
-function pulsaElBotonReproducir(){
-		var provisional = document.createElement('div');
-		provisional.setAttribute('id', 'provisional');
-		var parrafo = document.createElement("h1");
-		var contenido = document.createTextNode("Pulsa el botón reproducir");
-		provisional.appendChild(parrafo);
-		parrafo.appendChild(contenido);
-		var espectro = document.getElementById('espectro');
-		var papa = espectro.parentNode;
-		papa.insertBefore( provisional, espectro);
-		document.querySelector('#provisional').appendChild(parrafo);
-}
 
             </code></pre></div>
       </div>
@@ -377,127 +223,58 @@ function pulsaElBotonReproducir(){
       <hr>
 
       <footer>
-        <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png"/></a> </p>
+        <p>&copy; Luis Javier Gil 2013 |&nbsp; <a href="https://github.com/lontafara/El-audio-en-la-web" ><img src="imagenes/GitHub.png" alt="lontafara on git"/></a> </p>
       </footer>
 
     </div><!--/.container-->
+ <script src="comunes.js"></script>   
 <script type="text/javascript">
-//Pulsa el botón reproducir!!
-var parrafo = document.createElement("h1");
-var contenido = document.createTextNode("Pulsa el botón reproducir");
-parrafo.appendChild(contenido);
-document.querySelector('#provisional').appendChild(parrafo);
-var espectro = document.querySelector('#espectro');
-var ctxe = espectro.getContext('2d');
-var ancho = document.getElementById('marco').offsetWidth - 80;
-espectro.width = ancho;
-espectro.height = 200;
-var alto = 200;
-var ancho_barra;
-var resolucion = 5;
-document.querySelector('#resolucion').innerHTML = resolucion;
-//crea el contexto de audio
-var miFuente, misNodos = {},
-    espectro, imprimedBL, imprimedBR;
-var suena = false;
-var contextoDeAudio = new (window.AudioContext || window.webkitAudioContext || window.mozAudioContext ||window.oAudioContext || window.msAudioContext)();
-var comienzo = 0;
-var startOffset = 0;
-cargarSonido("audios/Huajara.mp3");
-// CARGAMOS el archivo con petición asíncorna XMLHTTP
 
-function cargarSonido(url) {
-    var peticion = new XMLHttpRequest();
-    peticion.open('GET', url, true);
-    // Cuando cargen los datos de audio:
-    peticion.responseType = 'arraybuffer';
-    peticion.addEventListener('load', bufferSound, false);
-    peticion.send();
-}
-
-function bufferSound(event) {
-    var peticion = event.target;
-    var buffer = contextoDeAudio.createBuffer(peticion.response, false);
-    mibuffer = buffer;
-}
-
-function playPause() {
-    if (suena) {
-        // Stop
-        var source = miFuente;
-        source.noteOff(0);
-        startOffset += contextoDeAudio.currentTime - this.comienzo;
-        console.log('Pausado en', startOffset);
-        // Grabar posición donde se pausó.
-        document.querySelector('#play').innerHTML = ' Reproducir';
-        $('#play').removeClass('glyphicon glyphicon-pause btn-danger');
-        $('#play').addClass('glyphicon glyphicon-play btn-info');
-        //Pulsa el botón reproducir!!
-        pulsaElBotonReproducir();
-    } else {
-        comienzo = contextoDeAudio.currentTime;
-        console.log('comienza en', startOffset);
-        var source = contextoDeAudio.createBufferSource();
-        source.buffer = mibuffer;
-        source.loop = true;
-        source = cadenaDeAudio(source);
-        // se puede pasar tambien contextoDeAudio.currentTime
-        suena == true;
-        //source.noteOn(0);
-        source.start(0, startOffset % source.buffer.duration);
-        marcoespectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-        miFuente = source;
-        document.querySelector('#play').innerHTML = ' Pausar';
-        $('#play').removeClass('glyphicon glyphicon-play btn-info');
-        $('#play').addClass('glyphicon glyphicon-pause btn-danger');
-        var parrafo = document.getElementById("provisional");
-        parrafo.parentNode.removeChild(parrafo);
-    }
-    this.suena = !this.suena;
-}
 
 function cadenaDeAudio(source) {
-    misNodos.volumen = contextoDeAudio.createGainNode();
-    misNodos.panner = contextoDeAudio.createPanner();
-    misNodos.analizador = contextoDeAudio.createAnalyser();
+    //Declaración de nodos en función de navegador...
+	if (esFirefox) { contextoDeAudio.volumen = contextoDeAudio.createGain();}else{
+    contextoDeAudio.volumen = contextoDeAudio.createGainNode();}
+    contextoDeAudio.panner = contextoDeAudio.createPanner();
+    contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
     //Analizador
-    misNodos.analizador.smoothingTimeConstant = 0.3;
-    misNodos.analizador.fftSize = 1024;
-    misNodos.analizador.minDecibels = -120;
-    misNodos.analizador.maxDecibels = 0;
+    contextoDeAudio.analizador.smoothingTimeConstant = 0.3;
+    contextoDeAudio.analizador.fftSize = 1024;
+    contextoDeAudio.analizador.minDecibels = -120;
+    contextoDeAudio.analizador.maxDecibels = 0;
     // Ajustamos los valores del nodo a los del potenciómetro
     // Panner
     //oyente
     var panX = document.querySelector('#pan').value;
     var panY = document.querySelector('#pany').value;
     var panZ = document.querySelector('#panz').value;
-    misNodos.panner.setPosition(panX, panY, panZ); // xy z representan las coordenadas en el espacio del oyente
+    contextoDeAudio.panner.setPosition(panX, panY, panZ); // xy z representan las coordenadas en el espacio del oyente
     //posición donde apunta el cono de radiación (0,0,0)= directo a la fuente
 /*var ejeX = document.querySelector('#ejex').value;
 			var ejeY = document.querySelector('#ejey').value;
 			var ejeZ = document.querySelector('#ejez').value;
-			misNodos.panner.setOrientation(ejeX, ejeY, ejeZ);
+			contextoDeAudio.panner.setOrientation(ejeX, ejeY, ejeZ);
 			//Diagrama de radiación (ángulo de la fuente) fuera de este ángulo se aplica reducción
 			//var angulo = document.querySelector('#angulo').value;
-			//misNodos.panner.coneOuterAngle(angulo);
+			//contextoDeAudio.panner.coneOuterAngle(angulo);
 			//Cuanta reducciñon se aplica
 			//var atenuacion = document.querySelector('#atenuacion').value;
-			//misNodos.panner.coneOuterGain(atenuacion);*/
+			//contextoDeAudio.panner.coneOuterGain(atenuacion);*/
     //ajustes de volumen
     var volumen = document.querySelector('#volumen').value;
-    misNodos.volumen.gain.value = volumen;
+    contextoDeAudio.volumen.gain.value = volumen;
     //Ruteo
-    source.connect(misNodos.volumen);
-    misNodos.volumen.connect(misNodos.panner);
-    misNodos.panner.connect(misNodos.analizador);
-    misNodos.panner.connect(contextoDeAudio.destination);
+    source.connect(contextoDeAudio.volumen);
+    contextoDeAudio.volumen.connect(contextoDeAudio.panner);
+    contextoDeAudio.panner.connect(contextoDeAudio.analizador);
+    contextoDeAudio.panner.connect(contextoDeAudio.destination);
     return source;
 }
 
 function dibujaEspectro() {
     ctxe.clearRect(0, 0, ancho, alto);
-    var datos_frecuencia = new Uint8Array(misNodos.analizador.frequencyBinCount);
-    misNodos.analizador.getByteFrequencyData(datos_frecuencia);
+    var datos_frecuencia = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteFrequencyData(datos_frecuencia);
     var NumerodeBarras = Math.round(ancho / resolucion);
     for (var i = 0; i < NumerodeBarras; i++) {
         //for (var i = 0; i < (datos_frecuencia.length); i++) {
@@ -508,19 +285,12 @@ function dibujaEspectro() {
         ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
         ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
     }
+   //Actualizamos la barra de progreso en tiempo real
+	actualiza_barra(retardo);
+	//Cremao el bucle de RequestAnimationFrame invocando de nuevo a la función.
+	requestAnimationFrame(dibujaEspectro.bind(this));
 }
 
-function cambiaResolucion_mas() {
-    resolucion = resolucion * 2;
-    document.querySelector('#resolucion').innerHTML = resolucion;
-    return resolucion;
-}
-
-function cambiaResolucion_menos() {
-    resolucion = resolucion / 2;
-    document.querySelector('#resolucion').innerHTML = resolucion;
-    return resolucion;
-}
 
 function potenciometro(slider) {
     if (contextoDeAudio.activeSourceCount > 0) {
@@ -531,10 +301,14 @@ function potenciometro(slider) {
             $('#valorx').html(panX);
             $('#valory').html(panY);
             $('#valorz').html(panZ);
-            misNodos.panner.setPosition(panX, panY, panZ);
+            contextoDeAudio.panner.setPosition(panX, panY, panZ);
         } else if (slider.id == 'volumen') {
-            var volumen = slider.value;
-            misNodos.volumen.gain.value = volumen;
+             var volumen = slider.value;
+            contextoDeAudio.volumen.gain.value = volumen;
+            $('#varvol').html(volumen);
+			//Lineal a dB
+            dBs = 20 * Math.log(volumen) / Math.LN10;
+			 $('#dBvol').html(dBs.toFixed(2));
         } else if (slider.id == 'ejex' || slider.id == 'ejey' || slider.id == 'ejez') {
             var ejeX = document.querySelector('#ejex').value;
             var ejeY = document.querySelector('#ejey').value;
@@ -542,31 +316,19 @@ function potenciometro(slider) {
             $('#valorejex').html(ejeX);
             $('#valorejey').html(ejeY);
             $('#valorejez').html(ejeZ);
-            misNodos.panner.setOrientation(ejeX, ejeY, ejeZ);
+            contextoDeAudio.panner.setOrientation(ejeX, ejeY, ejeZ);
         } else if (slider.id == 'angulo') {
             var angulo = slider.value;
-            misNodos.panner.coneOuterAngle.value = angulo;
+            contextoDeAudio.panner.coneOuterAngle.value = angulo;
             $('#valorangulo').html(angulo);
         } else if (slider.id == 'atenuacion') {
             var atenuacion = slider.value;
-            misNodos.panner.coneOuterGain.value = atenuacion;
+            contextoDeAudio.panner.coneOuterGain.value = atenuacion;
             $('#valoratenuacion').html(atenuacion);
         }
     }
 }
 
-function pulsaElBotonReproducir() {
-    var provisional = document.createElement('div');
-    provisional.setAttribute('id', 'provisional');
-    var parrafo = document.createElement("h1");
-    var contenido = document.createTextNode("Pulsa el botón reproducir");
-    provisional.appendChild(parrafo);
-    parrafo.appendChild(contenido);
-    var espectro = document.getElementById('espectro');
-    var papa = espectro.parentNode;
-    papa.insertBefore(provisional, espectro);
-    document.querySelector('#provisional').appendChild(parrafo);
-}
 
 </script>
     <!-- Bootstrap core JavaScript
