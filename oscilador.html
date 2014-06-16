@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="description" content="Ejemplo de un oscilador con Javascript a partir de la Web Audio API. ">
+    <meta name="author" content="Luis Javier Gil">
     <link rel="shortcut icon" href="">
 
     <title>Estudio de la Web audio API. Oscilador</title>
@@ -185,55 +185,63 @@ misNodos.analizador.getByteTimeDomainData(muestras);
       <div class="modal-body">
         <div class="highlight">
                <pre class="prettyprint"><code class="language-js">
-               
+///+*********************************************
+//  OSCILADOR
+//***********************************************
+//Declaración de variables globales
 var miFuente, misNodos = {},
     espectro, max = 0,
     imprimedBL, imprimedBR;
 var suena = false;
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext)();
-// variables de dibujo
 
-	
+
+// Función para sincronizar el botón play/pause   
 function Boton(button) {
-    if (!suena) {
-        playOsc();
-		$('#osc').html('Pausar&nbsp;');
-        //$(this).value = "Parar Sonido";
-		var parrafo = document.getElementById("provisional");
-       parrafo.parentNode.removeChild(parrafo);
-        suena = true;
-    } else {
-        misNodos.osc.stop(0);
-		$('#osc').html('Reproducir&nbsp;');
-        pulsaElBotonReproducir();
-        suena = false;
+        if (!suena) {
+            playOsc();
+            //Con Jquery cambiamos el interior de la etiqueta button con id="osc"
+            $('#osc').html('Pausar&nbsp;');
+            //$(this).value = "Parar Sonido";
+            var parrafo = document.getElementById("provisional");
+            parrafo.parentNode.removeChild(parrafo);
+            suena = true;
+        } else {
+            misNodos.osc.stop(0);
+            $('#osc').html('Reproducir&nbsp;');
+            pulsaElBotonReproducir();
+            suena = false;
+        }
     }
-}
+    //Función de ruteo y reproducción del oscilador. cada vez que pulsamos play, 
+    //estamos creando una ruta de audio en el contexto y reproduciendo el oscilador
 
 function playOsc() {
-    //Ajustamos los valores de frecuencia y escala en los controles de pantalla
-    var FREQUENCIA = document.querySelector('#freq').value;
-    var ESCALA = document.querySelector('#volumen').value
-    //Creamos los nodos de audio
-    misNodos.osc = contextoDeAudio.createOscillator();
-    misNodos.osc.frequency.value = FREQUENCIA;
-    misNodos.ganancia = contextoDeAudio.createGain();
-    misNodos.ganancia.gain.value = ESCALA;
-    misNodos.analizador = contextoDeAudio.createAnalyser();
-    misNodos.analizador.fftSize = 1024;
-    //conectamos los nodos
-    misNodos.osc.connect(misNodos.ganancia);
-    misNodos.ganancia.connect(misNodos.analizador);
-    misNodos.analizador.connect(contextoDeAudio.destination);
-    // comenzar ya.
-    misNodos.osc.start(0);
-    //espectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-    // reproducir ahora (0 segundos desde ahora)
-    requestAnimationFrame(visualizar.bind(this));
-    //Borrar texto
-    
-}
-visualizar = function() {
+        //Ajustamos los valores de frecuencia y escala en los controles de pantalla
+        var FREQUENCIA = document.querySelector('#freq').value;
+        var ESCALA = document.querySelector('#volumen').value
+            //Creamos los nodos de audio
+        misNodos.osc = contextoDeAudio.createOscillator();
+        misNodos.osc.frequency.value = FREQUENCIA;
+        misNodos.ganancia = contextoDeAudio.createGain();
+        misNodos.ganancia.gain.value = ESCALA;
+        misNodos.analizador = contextoDeAudio.createAnalyser();
+        misNodos.analizador.fftSize = 1024;
+        //conectamos los nodos
+        misNodos.osc.connect(misNodos.ganancia);
+        misNodos.ganancia.connect(misNodos.analizador);
+        misNodos.analizador.connect(contextoDeAudio.destination);
+        // comenzar ya.
+        misNodos.osc.start(0);
+        //espectro = setInterval(dibujaEspectro, 20); //Podríamos invocar la función dibujarEspectro cada 20 ms
+        // Lo óptimo es utilizar requestAnimationFrame
+        requestAnimationFrame(visualizar.bind(this));
+        //Borrar texto
+
+    }
+    //Esta función dibuja en pantalla la forma de onda
+visualizar = function () {
+    //Ajustes del canvas
     var canvas = document.querySelector('#canvas');
     var ctd = canvas.getContext('2d');
     var ancho = document.getElementById('marco').offsetWidth - 80;
@@ -265,7 +273,8 @@ visualizar = function() {
         ctd.lineTo(ancho, 128);
         ctd.stroke();
         ctd.fillText('0', 5, 128)
-        //dibujamaximo(ctd,max);
+            //dibujamaximo(ctd,max);
+            //El cálculo del máximo valor nos sirve para determinar el pico de dB
         document.querySelector('#maximo').innerHTML = max;
         dB = 20 * Math.log(Math.max((max / 127), Math.pow(10, -42 / 20))) / Math.LN10;
         document.querySelector('#dB').innerHTML = dB;
@@ -276,36 +285,39 @@ visualizar = function() {
 };
 
 function dibujamaximo(c, m) {
-    c.beginPath();
-    c.moveTo(0, 128 + m);
-    c.lineTo(20, 128 + m);
-    var a = 128 + m;
-    c.fillStyle = "rgb(25,255,0)";
-    c.fillText(m, 5, a);
-    c.stroke();
-}
+        c.beginPath();
+        c.moveTo(0, 128 + m);
+        c.lineTo(20, 128 + m);
+        var a = 128 + m;
+        c.fillStyle = "rgb(25,255,0)";
+        c.fillText(m, 5, a);
+        c.stroke();
+    }
+    //Función que filtra los cambios en los controles
 
 function potenciometro(slider) {
-    if (contextoDeAudio.activeSourceCount > 0) {
-        if (slider.id == 'freq') {
-            var FREQ = slider.value;
-            misNodos.osc.frequency.value = FREQ;
-            document.querySelector('#valorfreq').innerHTML = FREQ;
-		 }else if (slider.id == 'detune') {
-            var detune = slider.value;
-            misNodos.osc.detune.value = detune;
-            document.querySelector('#valordetune').innerHTML = detune;	
-		 }else if (slider.id == 'tipoonda') {
-		    //Seleccionamos entre los tipos de forma de onda del oscilador.
-			misNodos.osc.type=slider.value;
-			
-		} else if (slider.id == 'volumen') {
-            var volumen = slider.value;
-            misNodos.ganancia.gain.value = volumen;
-            document.querySelector('#valorvol').innerHTML = volumen;
+        if (contextoDeAudio.activeSourceCount > 0) {
+            if (slider.id == 'freq') {
+                var FREQ = slider.value;
+                misNodos.osc.frequency.value = FREQ;
+                document.querySelector('#valorfreq').innerHTML = FREQ;
+            } else if (slider.id == 'detune') {
+                var detune = slider.value;
+                misNodos.osc.detune.value = detune;
+                document.querySelector('#valordetune').innerHTML = detune;
+            } else if (slider.id == 'tipoonda') {
+                //Seleccionamos entre los tipos de forma de onda del oscilador.
+                misNodos.osc.type = slider.value;
+
+            } else if (slider.id == 'volumen') {
+                var volumen = slider.value;
+                misNodos.ganancia.gain.value = volumen;
+                document.querySelector('#valorvol').innerHTML = volumen;
+            }
         }
     }
-}
+    //Función javascript para mostrar el texto, con Jquery escribiríamos menos :)
+
 function pulsaElBotonReproducir() {
     var provisional = document.createElement('div');
     provisional.setAttribute('id', 'provisional');
@@ -317,12 +329,7 @@ function pulsaElBotonReproducir() {
     var papa = espectro.parentNode;
     papa.insertBefore(provisional, espectro);
     document.querySelector('#provisional').appendChild(parrafo);
-} 
-
-
-
-
-               
+}          
                
                </code></pre></div>
       </div>
@@ -363,30 +370,36 @@ function pulsaElBotonReproducir() {
     </div><!--/.container-->
 
 <script type="text/javascript">
+///+*********************************************
+//  OSCILADOR
+//***********************************************
+//Declaración de variables globales
 var miFuente, misNodos = {},
     espectro, max = 0,
     imprimedBL, imprimedBR;
 var suena = false;
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext)();
-// variables de dibujo
 
-	
+
+ // Función para sincronizar el botón play/pause   
 function Boton(button) {
     if (!suena) {
         playOsc();
-		$('#osc').html('Pausar&nbsp;');
+        //Con Jquery cambiamos el interior de la etiqueta button con id="osc"
+        $('#osc').html('Pausar&nbsp;');
         //$(this).value = "Parar Sonido";
-		var parrafo = document.getElementById("provisional");
+        var parrafo = document.getElementById("provisional");
        parrafo.parentNode.removeChild(parrafo);
         suena = true;
     } else {
         misNodos.osc.stop(0);
-		$('#osc').html('Reproducir&nbsp;');
+        $('#osc').html('Reproducir&nbsp;');
         pulsaElBotonReproducir();
         suena = false;
     }
 }
-
+//Función de ruteo y reproducción del oscilador. cada vez que pulsamos play, 
+//estamos creando una ruta de audio en el contexto y reproduciendo el oscilador
 function playOsc() {
     //Ajustamos los valores de frecuencia y escala en los controles de pantalla
     var FREQUENCIA = document.querySelector('#freq').value;
@@ -404,13 +417,15 @@ function playOsc() {
     misNodos.analizador.connect(contextoDeAudio.destination);
     // comenzar ya.
     misNodos.osc.start(0);
-    //espectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
-    // reproducir ahora (0 segundos desde ahora)
+    //espectro = setInterval(dibujaEspectro, 20); //Podríamos invocar la función dibujarEspectro cada 20 ms
+    // Lo óptimo es utilizar requestAnimationFrame
     requestAnimationFrame(visualizar.bind(this));
     //Borrar texto
     
 }
+//Esta función dibuja en pantalla la forma de onda
 visualizar = function() {
+    //Ajustes del canvas
     var canvas = document.querySelector('#canvas');
     var ctd = canvas.getContext('2d');
     var ancho = document.getElementById('marco').offsetWidth - 80;
@@ -443,6 +458,7 @@ visualizar = function() {
         ctd.stroke();
         ctd.fillText('0', 5, 128)
         //dibujamaximo(ctd,max);
+        //El cálculo del máximo valor nos sirve para determinar el pico de dB
         document.querySelector('#maximo').innerHTML = max;
         dB = 20 * Math.log(Math.max((max / 127), Math.pow(10, -42 / 20))) / Math.LN10;
         document.querySelector('#dB').innerHTML = dB;
@@ -461,28 +477,29 @@ function dibujamaximo(c, m) {
     c.fillText(m, 5, a);
     c.stroke();
 }
-
+//Función que filtra los cambios en los controles
 function potenciometro(slider) {
     if (contextoDeAudio.activeSourceCount > 0) {
         if (slider.id == 'freq') {
             var FREQ = slider.value;
             misNodos.osc.frequency.value = FREQ;
             document.querySelector('#valorfreq').innerHTML = FREQ;
-		 }else if (slider.id == 'detune') {
+         }else if (slider.id == 'detune') {
             var detune = slider.value;
             misNodos.osc.detune.value = detune;
-            document.querySelector('#valordetune').innerHTML = detune;	
-		 }else if (slider.id == 'tipoonda') {
-		    //Seleccionamos entre los tipos de forma de onda del oscilador.
-			misNodos.osc.type=slider.value;
-			
-		} else if (slider.id == 'volumen') {
+            document.querySelector('#valordetune').innerHTML = detune;  
+         }else if (slider.id == 'tipoonda') {
+            //Seleccionamos entre los tipos de forma de onda del oscilador.
+            misNodos.osc.type=slider.value;
+            
+        } else if (slider.id == 'volumen') {
             var volumen = slider.value;
             misNodos.ganancia.gain.value = volumen;
             document.querySelector('#valorvol').innerHTML = volumen;
         }
     }
 }
+//Función javascript para mostrar el texto, con Jquery escribiríamos menos :)
 function pulsaElBotonReproducir() {
     var provisional = document.createElement('div');
     provisional.setAttribute('id', 'provisional');

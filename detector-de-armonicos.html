@@ -134,7 +134,7 @@ function reproducirSonido() {
 	if (suena) {
 		 // Stop
         var fuente = miFuente;
-        fuente.noteOff(0);
+        fuente.stop(0);
         retardo += contextoDeAudio.currentTime - this.comienzo;
         console.log('Pausado en', retardo);
         // Grabar posición donde se pausó.

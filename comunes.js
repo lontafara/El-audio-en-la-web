@@ -1,6 +1,6 @@
 //Funciones y variables comunes
 //espectro
-
+//Ajustamos las variables de dibujo
 var espectro = document.querySelector('#espectro');
 var ctxe = espectro.getContext('2d');
 var ancho = document.getElementById('marco').offsetWidth - 80;
@@ -8,15 +8,16 @@ espectro.width = ancho;
 espectro.height = 200;
 var alto = 200;
 var ancho_barra;
-
+//También para el indicador de resolución
 var resolucion = 5;
 document.querySelector('#resolucion').innerHTML = resolucion;
 
 //crea el contexto de audio
 var miFuente,fuente, mibuffer,panner, misNodos = {},
-    espectro, maximo, esOpera,esFirefox,esChrome,esSafari,esIE, duracion, progreso;
+ espectro, maximo, esOpera,esFirefox,esChrome,esSafari,esIE, duracion, progreso;
 var suena = false;
 var avance = false;
+//Actualmente con new AudioContext es suficiente
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.oAudioContext || window.msAudioContext)();
 var comienzo = 0;
 var retardo = 0;
@@ -36,7 +37,7 @@ function( callback ){
 window.setTimeout(callback, 1000 / 60);
 };
 })(); 
-
+//CArgamos el archivo al cargar la página. Esta función la solemos llamar en onbodyload
 function inicializar() {
 	aviso();
 	checkNavegador();
@@ -58,6 +59,8 @@ function cargarSonido(url) {
     }
     peticion.send();
 }
+
+// Función para controlar la progressbar de Boostrap
 function actualiza_barra(retardo){
 
 if (suena) {
@@ -79,6 +82,8 @@ if (suena) {
 //console.log('SI NO SUENA HAGO: retardobarra:'+retardobarra+'duraciontotal: '+duracion+'progreso de la barra en porcentaje'+progreso)
 
 }
+
+//Función de control Reproducción/Pausa
 function playPause() {
     if (suena) {
         // Stop
@@ -136,7 +141,7 @@ function playPause() {
     this.suena = !this.suena;
 	
 }
-
+//Muestra un botón de recarga al finalizar la pista de audio. Inicializa los componentes
 function botonRecarga(){
 	if ($('#play').hasClass('btn-danger')){
 		    var texto = $('#play');
@@ -152,6 +157,7 @@ function botonRecarga(){
 	
 	}
 function recarga(){location.reload();}
+//Función para mostrar el botón reproducir
 function pulsaElBotonReproducir() {
     var provisional = document.createElement('div');
     provisional.setAttribute('id', 'provisional');
@@ -183,6 +189,8 @@ esSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Construct
 esChrome = !!window.chrome && !esOpera;              // Chrome 1+
 esIE = /*@cc_on!@*/false || !!document.documentMode;   // At least IE6	
 }
+
+// Funciones de control de resolución
 function cambiaResolucion_mas() {
     resolucion = resolucion * 2;
     document.querySelector('#resolucion').innerHTML = resolucion;
