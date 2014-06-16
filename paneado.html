@@ -193,9 +193,111 @@
                <pre class="prettyprint"><code class="language-js">  
 
 
+function cadenaDeAudio(source) {
+    //Declaración de nodos en función de navegador...
+	if (esFirefox) { contextoDeAudio.volumen = contextoDeAudio.createGain();}else{
+    contextoDeAudio.volumen = contextoDeAudio.createGainNode();}
+    contextoDeAudio.panner = contextoDeAudio.createPanner();
+    contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
+    //Analizador
+    contextoDeAudio.analizador.smoothingTimeConstant = 0.3;
+    contextoDeAudio.analizador.fftSize = 1024;
+    contextoDeAudio.analizador.minDecibels = -120;
+    contextoDeAudio.analizador.maxDecibels = 0;
+    // Ajustamos los valores del nodo a los del potenciómetro
+    // Panner
+    //oyente
+    var panX = document.querySelector('#pan').value;
+    var panY = document.querySelector('#pany').value;
+    var panZ = document.querySelector('#panz').value;
+    contextoDeAudio.panner.setPosition(panX, panY, panZ); // xy z representan las coordenadas en el espacio del oyente
+    //posición donde apunta el cono de radiación (0,0,0)= directo a la fuente
+/*var ejeX = document.querySelector('#ejex').value;
+			var ejeY = document.querySelector('#ejey').value;
+			var ejeZ = document.querySelector('#ejez').value;
+			contextoDeAudio.panner.setOrientation(ejeX, ejeY, ejeZ);
+			//Diagrama de radiación (ángulo de la fuente) fuera de este ángulo se aplica reducción
+			//var angulo = document.querySelector('#angulo').value;
+			//contextoDeAudio.panner.coneOuterAngle(angulo);
+			//Cuanta reducciñon se aplica
+			//var atenuacion = document.querySelector('#atenuacion').value;
+			//contextoDeAudio.panner.coneOuterGain(atenuacion);*/
+    //ajustes de volumen
+    var volumen = document.querySelector('#volumen').value;
+    contextoDeAudio.volumen.gain.value = volumen;
+    //Ruteo
+    source.connect(contextoDeAudio.volumen);
+    contextoDeAudio.volumen.connect(contextoDeAudio.panner);
+    contextoDeAudio.panner.connect(contextoDeAudio.analizador);
+    contextoDeAudio.panner.connect(contextoDeAudio.destination);
+    return source;
+}
+
+function dibujaEspectro() {
+    ctxe.clearRect(0, 0, ancho, alto);
+    var datos_frecuencia = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteFrequencyData(datos_frecuencia);
+    var NumerodeBarras = Math.round(ancho / resolucion);
+    for (var i = 0; i < NumerodeBarras; i++) {
+        //for (var i = 0; i < (datos_frecuencia.length); i++) {
+        var magnitud = datos_frecuencia[i];
+        // ajustamos las variables para dibujarlas en el canvas
+        //dibujamos tipo hue ;)
+        var hue = i / datos_frecuencia.length * 360
+        ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+        ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+    }
+   //Actualizamos la barra de progreso en tiempo real
+	actualiza_barra(retardo);
+	//Cremao el bucle de RequestAnimationFrame invocando de nuevo a la función.
+	requestAnimationFrame(dibujaEspectro.bind(this));
+}
+
+
+function potenciometro(slider) {
+    if (contextoDeAudio.activeSourceCount > 0) {
+        if (slider.id == 'pan' || slider.id == 'pany' || slider.id == 'panz') {
+            var panX = document.querySelector('#pan').value;
+            var panY = document.querySelector('#pany').value;
+            var panZ = document.querySelector('#panz').value;
+            $('#valorx').html(panX);
+            $('#valory').html(panY);
+            $('#valorz').html(panZ);
+            contextoDeAudio.panner.setPosition(panX, panY, panZ);
+        } else if (slider.id == 'volumen') {
+             var volumen = slider.value;
+            contextoDeAudio.volumen.gain.value = volumen;
+            $('#varvol').html(volumen);
+			//Lineal a dB
+            dBs = 20 * Math.log(volumen) / Math.LN10;
+			 $('#dBvol').html(dBs.toFixed(2));
+        } else if (slider.id == 'ejex' || slider.id == 'ejey' || slider.id == 'ejez') {
+            var ejeX = document.querySelector('#ejex').value;
+            var ejeY = document.querySelector('#ejey').value;
+            var ejeZ = document.querySelector('#ejez').value;
+            $('#valorejex').html(ejeX);
+            $('#valorejey').html(ejeY);
+            $('#valorejez').html(ejeZ);
+            contextoDeAudio.panner.setOrientation(ejeX, ejeY, ejeZ);
+        } else if (slider.id == 'angulo') {
+            var angulo = slider.value;
+            contextoDeAudio.panner.coneOuterAngle.value = angulo;
+            $('#valorangulo').html(angulo);
+        } else if (slider.id == 'atenuacion') {
+            var atenuacion = slider.value;
+            contextoDeAudio.panner.coneOuterGain.value = atenuacion;
+            $('#valoratenuacion').html(atenuacion);
+        }
+    }
+}
+
+
+
             </code></pre></div>
       </div>
       <div class="modal-footer">
+            <a  class="label label-info"target="_blank" href="comunes.js"><span class="glyphicon glyphicon-share-alt"></span>&nbsp; Ver Script de fucniones comunes</a>
+
         <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
         
       </div>

@@ -193,14 +193,19 @@ var suena = false;
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext)();
 // variables de dibujo
 
+	
 function Boton(button) {
     if (!suena) {
         playOsc();
-        button.value = "Parar Sonido";
+		$('#osc').html('Pausar&nbsp;');
+        //$(this).value = "Parar Sonido";
+		var parrafo = document.getElementById("provisional");
+       parrafo.parentNode.removeChild(parrafo);
         suena = true;
     } else {
         misNodos.osc.stop(0);
-        button.value = "Reproducir";
+		$('#osc').html('Reproducir&nbsp;');
+        pulsaElBotonReproducir();
         suena = false;
     }
 }
@@ -221,13 +226,12 @@ function playOsc() {
     misNodos.ganancia.connect(misNodos.analizador);
     misNodos.analizador.connect(contextoDeAudio.destination);
     // comenzar ya.
-    // reproducir ahora (0 segundos desde ahora)
     misNodos.osc.start(0);
     //espectro = setInterval(dibujaEspectro, 20); //llamamos a la función dibujarEspectro cada 20 ms
+    // reproducir ahora (0 segundos desde ahora)
     requestAnimationFrame(visualizar.bind(this));
     //Borrar texto
-    var parrafo = document.getElementById("provisional");
-    parrafo.parentNode.removeChild(parrafo);
+    
 }
 visualizar = function() {
     var canvas = document.querySelector('#canvas');
@@ -287,14 +291,33 @@ function potenciometro(slider) {
             var FREQ = slider.value;
             misNodos.osc.frequency.value = FREQ;
             document.querySelector('#valorfreq').innerHTML = FREQ;
-        } else if (slider.id == 'volumen') {
+		 }else if (slider.id == 'detune') {
+            var detune = slider.value;
+            misNodos.osc.detune.value = detune;
+            document.querySelector('#valordetune').innerHTML = detune;	
+		 }else if (slider.id == 'tipoonda') {
+		    //Seleccionamos entre los tipos de forma de onda del oscilador.
+			misNodos.osc.type=slider.value;
+			
+		} else if (slider.id == 'volumen') {
             var volumen = slider.value;
             misNodos.ganancia.gain.value = volumen;
             document.querySelector('#valorvol').innerHTML = volumen;
         }
     }
 }
-
+function pulsaElBotonReproducir() {
+    var provisional = document.createElement('div');
+    provisional.setAttribute('id', 'provisional');
+    var parrafo = document.createElement("h1");
+    var contenido = document.createTextNode("Pulsa el botón reproducir");
+    provisional.appendChild(parrafo);
+    parrafo.appendChild(contenido);
+    var espectro = document.getElementById('marco');
+    var papa = espectro.parentNode;
+    papa.insertBefore(provisional, espectro);
+    document.querySelector('#provisional').appendChild(parrafo);
+} 
 
 
 
@@ -304,6 +327,8 @@ function potenciometro(slider) {
                </code></pre></div>
       </div>
       <div class="modal-footer">
+            <a  class="label label-info"target="_blank" href="comunes.js"><span class="glyphicon glyphicon-share-alt"></span>&nbsp; Ver Script de fucniones comunes</a>
+
         <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
         
       </div>

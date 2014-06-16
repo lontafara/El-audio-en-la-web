@@ -163,11 +163,181 @@
         <div class="highlight">
                <pre class="prettyprint"><code class="language-js">  
 
-code
+/Indicadores
+var canvas = document.querySelector('#meter1');
+var ctx = canvas.getContext('2d');
+var w = canvas.width;
+var h = canvas.height;
+ctx.fillStyle = '#F7F7F7';
+ctx.fillRect(0, 0, w, h);
+var degradado = ctx.createLinearGradient(w / 10, h * 0.2, w / 10, h * 0.95);
+degradado.addColorStop(0, 'red');
+var seis= (0.01);
+console.log('-6 dB: '+seis)
+degradado.addColorStop( seis, 'yellow');
+degradado.addColorStop(1.0, 'green');
+
+// CARGAMOS el archivo con petición asíncorna XMLHTTP
+
+function cadenaDeAudio(source) {
+    
+    contextoDeAudio.compresor = contextoDeAudio.createDynamicsCompressor();
+    //procesador para dibujar los indicadores de volumen NO ES LO ÓPTIMO ->> NODO ANALIZADOR
+    //contextoDeAudio.procesador = contextoDeAudio.createScriptProcessor(1024, 1, 1);
+    contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
+    if (esFirefox) { contextoDeAudio.volumen = contextoDeAudio.createGain();}else{
+    contextoDeAudio.volumen = contextoDeAudio.createGainNode();}
+	//Analizador
+    contextoDeAudio.analizador.smoothingTimeConstant = 0.8;
+    contextoDeAudio.analizador.fftSize = 1024;
+    contextoDeAudio.analizador.minDecibels = -120;
+    contextoDeAudio.analizador.maxDecibels = 0;
+    // Ajustamos los valores del nodo a los del potenciómetro
+    //Volumen
+    var volumen = document.querySelector('#volumen').value;
+    contextoDeAudio.volumen.gain.value = volumen;
+    // Compresor
+    var umbral = document.querySelector('#umbral').value;
+    var ratio = document.querySelector('#ratio').value;
+    var ataque = document.querySelector('#ataque').value;
+    var liberacion = document.querySelector('#liberacion').value;
+    contextoDeAudio.compresor.threshold.value = umbral;
+    contextoDeAudio.compresor.ratio.value = ratio;
+    contextoDeAudio.compresor.attack.value = ataque;
+    contextoDeAudio.compresor.release.value = liberacion;
+    //Ruteo
+    source.connect(contextoDeAudio.volumen);
+    //contextoDeAudio.panner.connect(contextoDeAudio.procesador);
+    contextoDeAudio.volumen.connect(contextoDeAudio.compresor);
+    //contextoDeAudio.compresor.connect(contextoDeAudio.procesador);
+    contextoDeAudio.compresor.connect(contextoDeAudio.analizador);
+    //contextoDeAudio.procesador.connect(contextoDeAudio.destination);
+    //contextoDeAudio.analizador.connect(contextoDeAudio.destination);
+    contextoDeAudio.compresor.connect(contextoDeAudio.destination);
+    //contextoDeAudio.procesador.onaudioprocess = function(audio) {
+       //Este método se ha descartado, utilizaremos la función nativa del contexto de audio requestAnimatonFrame para una mejor implementación
+   // }; // FIN Procesador
+    return source;
+}
+
+function dibujaEspectro() {
+    ctxe.clearRect(0, 0, ancho, alto);
+    var datos_frecuencia = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteFrequencyData(datos_frecuencia);
+    var NumerodeBarras = Math.round(ancho / resolucion);
+    for (var i = 0; i < NumerodeBarras; i++) {
+        //for (var i = 0; i < (datos_frecuencia.length); i++) {
+        var magnitud = datos_frecuencia[i];
+        // ajustamos las variables para dibujarlas en el canvas
+        //dibujamos tipo hue ;)
+        var hue = i / datos_frecuencia.length * 360
+        ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+        ctxe.fillRect(resolucion * i, alto, resolucion - 2, -magnitud + 60);
+    }
+	
+	
+	 //Aterior Nodo de procesado con JavaScript
+        //inicialiamos variables de dibujo del medidor de nivel de volumen
+        
+        //var intl = e.inputBuffer.getChannelData(0);// Devuelve un Float 32 Array con los valores de la PCM entre -1 y 1
+        //ej. : valor  de muestra: 0.13016553223133087. Suleo (en dB) 20log(0.00000000000001/1)= -340.  Pero visualizamos sobre un piso de 72dB  72dB=0.  
+        
+				//console.log("maximo:  "+max )
+				//hacemos 20·log10(max) teniendo en cuenta que el mínimo es -42 db
+				 //var dB=20*Math.log(Math.max((max/128), Math.pow(10,-42/20)))/ Math.LN10;*/
+        //32 BITS	 
+		//Opción1
+		/*
+		var salida = audio.outputBuffer.getChannelData(0); //Crea un audio buffer donde se escribirán datos de audio a la salida 
+        var entrada = audio.inputBuffer.getChannelData(0); // Crea una instancia de Audio Buffer con los datos de audio a la entrada
+        var max = 0;
+        for (var i = 0; i < entrada.length; i++) {
+            salida[i] = 0; //obviamos la salida, nos quedamos con los datos a la entrada del nodo de proceso
+            max = entrada[i] > max ? entrada[i] : max;
+        }*/ 
+        // calculamos el pico cada 1024 muestras de la PCM del buffer. Cada muestra del vector se cuantifica en este caso con 1 Byte, 128 es centro del rango dinámico.
+        // 8 BITS
+        var muestras = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+			contextoDeAudio.analizador.getByteTimeDomainData(muestras);
+						  var max=0;
+						  for(var i = 0; i < muestras.length; i++){
+									max = muestras[i] > max ? muestras[i] : max;
+								
+								}
+
+								//El piso es 128
+								max-=128;
+			    //convertimos a dB teniendo en cuenta:
+				//Valor máximo de la señal =128 =0dB. valor mínimo de la señal en dB = 20log(min/max)=> -42=20log(1/128)
+        var dB = 20 * Math.log(Math.max((max/128), Math.pow(10, -42 / 20))) / Math.LN10;
+        //Dibujamos en el canvas
+        //Dibujamos el  dedegradadoado
+		 ctx.fillStyle = '#F7F7F7';
+        ctx.fillRect(0, 0, w, h); 
+        
+        
+		//Rellena el rectángulo
+        ctx.fillStyle = degradado;
+        //Dibujamos el rectángulo
+        ctx.fillRect(w / 6, h * 0.8 * (dB / -42), w * 8 / 10, (h * 0.95) - h * 0.8 * (dB / -42));
+        //dibujamos el texto de dB
+        ctx.fillStyle = "black";
+        ctx.font = "Arial 14pt";
+        ctx.textAlign = "center";
+        //Dibujamos los dB en la parte baja del indicador de nivel
+        ctx.fillText(Math.round(dB * 100) / 100 + ' dB', w / 2, h - h * 0.025);
+        //Rellenamos el rectánguloteniendo en cuenta los márgenes;
+        ctx.fillText(-6, 8, h * 0.8 * (-6 / -42));
+        ctx.fillText(-12, 8, h * 0.8 * (-12 / -42));
+        ctx.fillText(-24, 8, h * 0.8 * (-24 / -42));
+        //console.log ("reduccion"+contextoDeAudio.compresor.reduction.value)
+        
+		//Actualizamos la reducción en dB a la salida del nodo compresor
+		var reduccion = contextoDeAudio.compresor.reduction.value.toFixed(2);
+        document.querySelector('#reduccion').innerHTML = reduccion;
+	
+	
+    //Actualizamos la barra de progreso en tiempo real
+	actualiza_barra(retardo);
+	//Cremao el bucle de RequestAnimationFrame invocando de nuevo a la función.
+	requestAnimationFrame(dibujaEspectro.bind(this));
+}
+
+
+function potenciometro(slider) {
+    if (contextoDeAudio.activeSourceCount > 0) {
+        if (slider.id == 'volumen') {
+            var volumen = slider.value;
+            contextoDeAudio.volumen.gain.value = volumen;
+            document.querySelector('#varvol').innerHTML = volumen;
+            dBs = 20 * Math.log(volumen) / Math.LN10;
+            document.querySelector('#dBvol').innerHTML = dBs.toFixed(2);
+        } else if (slider.id == 'umbral') {
+            var umbral = slider.value;
+            contextoDeAudio.compresor.threshold.value = umbral;
+            document.querySelector('#umbral-valor').innerHTML = umbral;
+        } else if (slider.id == 'ratio') {
+            var ratio = slider.value;
+            contextoDeAudio.compresor.ratio.value = ratio;
+            document.querySelector('#ratio-valor').innerHTML = ratio;
+        } else if (slider.id == 'ataque') {
+            var ataque = slider.value;
+            contextoDeAudio.compresor.attack.value = ataque;
+            document.querySelector('#ataque-valor').innerHTML = ataque;
+        } else if (slider.id == 'liberacion') {
+            var liberacion = slider.value;
+            contextoDeAudio.compresor.release.value = liberacion;
+            document.querySelector('#liberacion-valor').innerHTML = liberacion;
+        }
+    }
+}
+
                
                               </code></pre></div>
       </div>
       <div class="modal-footer">
+            <a  class="label label-info"target="_blank" href="comunes.js"><span class="glyphicon glyphicon-share-alt"></span>&nbsp; Ver Script de fucniones comunes</a>
+
         <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
         
       </div>
