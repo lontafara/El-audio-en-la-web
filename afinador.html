@@ -3,8 +3,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
-
-    <title>Detector de Armónicos</title>
+     <meta name="description" content="Afinador de guitarra basado en Algoritmo de detección armónica Web Audio API. Javascript">
+     <meta name="author" content="Luis Javier Gil Bobillo">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="images/icono57.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/icono72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/icono114.png">
+    <title>Detector de Armónicos. Afinador de guitarra experimental con Javascript</title>
     <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="http://getbootstrap.com/assets/css/docs.min.css" rel="stylesheet">
     <style>
@@ -114,18 +120,7 @@
             var posiciones = new Array();
             var valorespico = new Array();
             var posicionespico = new Array();
-            //var posicionesordenadas = new Array();
-            //var valoresordenados = new Array();
-            //for (var i = 0; i < NumerodeBarras; i++) {
-            
-            //calculo directo del máximo    
-            /*
-            var losmayores = new Array();
-            losmayores = Math.max.apply( Math, ByteDatosFrec );
-            console.log(
-            losmayores
-            )   
-            */
+         
                 //Comparo valores mayores que el umbral
                 
                 for (var m = 0; m <= (ByteDatosFrec.length); m++) {

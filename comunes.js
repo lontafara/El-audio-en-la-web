@@ -1,22 +1,12 @@
 //Funciones y variables comunes
 //espectro
-//Ajustamos las variables de dibujo
-var espectro = document.querySelector('#espectro');
-var ctxe = espectro.getContext('2d');
-var ancho = document.getElementById('marco').offsetWidth - 80;
-espectro.width = ancho;
-espectro.height = 200;
-var alto = 200;
-var ancho_barra;
-//También para el indicador de resolución
-var resolucion = 5;
-document.querySelector('#resolucion').innerHTML = resolucion;
 
 //crea el contexto de audio
 var miFuente,fuente, mibuffer,panner, misNodos = {},
  espectro, maximo, esOpera,esFirefox,esChrome,esSafari,esIE, duracion, progreso;
 var suena = false;
 var avance = false;
+var pausa= true;
 //Actualmente con new AudioContext es suficiente
 var contextoDeAudio = new(window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.oAudioContext || window.msAudioContext)();
 var comienzo = 0;
@@ -25,7 +15,7 @@ var comienzobarra = 0;
 var retardobarra = 0;
 var indice= 500;
 var nyquist = contextoDeAudio.sampleRate / 2;
-
+var sw=0;
 //API request animation frame para distintos navegadores
 window.requestAnimFrame = (function(){
 return window.requestAnimationFrame ||
@@ -201,4 +191,11 @@ function cambiaResolucion_menos() {
     resolucion = resolucion / 2;
     document.querySelector('#resolucion').innerHTML = resolucion;
     return resolucion;
+}
+
+function parar() {
+	if(suena){
+    var fuente = miFuente;
+    fuente.stop(0);
+    clearInterval(espectro);}
 }

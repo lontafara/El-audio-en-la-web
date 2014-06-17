@@ -12,6 +12,13 @@
     <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
 	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
+     <meta name="description" content="algoritmo de detección armónica Web Audio API. Javascript">
+     <meta name="author" content="Luis Javier Gil Bobillo">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="images/icono57.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/icono72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/icono114.png">
 <style>
 .warning1{
 	background-color:#fffdf1;
@@ -38,55 +45,28 @@
 button sup { font-size:9px;}
  #provisional{ position:absolute; color:#FFF}
 </style>
+<script src="comunes.js"></script>
 <script>
-var contextoDeAudio, analizador, mibuffer, procesado, miFuente, misNodos = {},
-    espectro, resolucion, tiempo, retardo =0, comienzo=0, suena = false, pausa=true;
-
-function init() {
-    contextoDeAudio = new (window.AudioContext || window.webkitAudioContext || window.mozAudioContext ||window.oAudioContext || window.msAudioContext)();
-    prettyPrint();
-	//textoEnMarco();//mostrará el texto en los marcos
-	var sw=0;// para mantener el alert de la frecuencia de muestreo
-	cargarSonido("audios/Huajara.mp3");
-}
-// CARGAMOS el archivo con petición asíncorna XMLHTTP
-
-function cargarSonido(url) {
-    var peticion = new XMLHttpRequest();
-    peticion.open('GET', url, true);
-    // Cuando cargen los datos de audio:
-    peticion.responseType = 'arraybuffer';
-    //cuando cargue decodificamos los datos de audio y los introducimos como una PCM en la variable mi buffer
-    peticion.onload = function() {
-        contextoDeAudio.decodeAudioData(peticion.response, function(elbuffer) {
-            mibuffer = elbuffer;
-        });
-    }
-    peticion.send();
-}
-
-//------USAMOS  MICrófono
+var intervalosnota;
+//------Si USAMOS  MICrófono
 
 function sonidoDirecto() {
-	if (pausa==false){
-		misNodos.volume.disconnect();
+	if (pausa==false || suena){
+		//contextoDeAudio.volumen.disconnect();
+		 miFuente.disconnect();
 		 //añadir texto al marco!!
-		 //textoEnMarco();
-		document.querySelector('#microfono').innerHTML = '&nbsp;Usar mic';
-	    $('#microfono').removeClass('glyphicon glyphicon-pause btn-warning');
-       $('#microfono').addClass('glyphicon glyphicon-user btn-success');
+		 pulsaElBotonReproducir();
+		 //Cambiar estadomic
+		 textoPlayMic();
 	   pausa= true;
 		}else{
 	   tomarEntradaMic({audio:true}, al_aire);
 		}
 }
 
-function error() {
-    alert('Stream generation failed.');
-}
 
 function error() {
-    alert('Falló la generación de la cadena de Audio. Utilizas Chrome o Safari?');
+    alert('Falló la generación de la cadena de Audio. Safari no soporta getUserMedia aún....');
 }
 
 function tomarEntradaMic(medio, llamada) {
@@ -102,107 +82,54 @@ function tomarEntradaMic(medio, llamada) {
 }
 
 function al_aire(entrada) {
+
     var fuente = contextoDeAudio.createMediaStreamSource(entrada);
     // crea analizador
-    analizador = contextoDeAudio.createAnalyser();
-    analizador.fftSize = 2048;
-    cadenaDeAudio(fuente);
-    requestAnimationFrame(analisis.bind(this))
+    contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
+    contextoDeAudio.analizador.fftSize = 2048;
+    //cadenaDeAudio(fuente);
+	fuente.connect(contextoDeAudio.analizador);
+    requestAnimationFrame(dibujaEspectro.bind(this))
 	 miFuente = fuente;
 	
 	//Estado del botón de entrada de mic
-	document.querySelector('#microfono').innerHTML = '&nbsp;Pausar mic';
-	$('#microfono').removeClass('glyphicon glyphicon-user btn-success');
-    $('#microfono').addClass('glyphicon glyphicon-pause btn-warning');
-	pausa= false;
-	
+	textoPausaMic();
+	//Eliminar el provisional 
+	var parrafo = document.getElementById("provisional");
+    parrafo.parentNode.removeChild(parrafo);
+	pausa=false;
 }
+
 //establecemos la cadena de audio 
 
 function cadenaDeAudio(fuente) {
-    misNodos.volume = contextoDeAudio.createGainNode();
-    var volume = document.querySelector('#volume').value;
-    misNodos.volume.gain.value = volume;
+	contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
+    //Analizador
+    contextoDeAudio.analizador.smoothingTimeConstant = 0.8;
+    contextoDeAudio.analizador.fftSize = 1024;
+    contextoDeAudio.analizador.minDecibels = -120;
+    contextoDeAudio.analizador.maxDecibels = 0;
+	
+    if (esFirefox) { contextoDeAudio.volumen = contextoDeAudio.createGain();}else{
+    contextoDeAudio.volumen = contextoDeAudio.createGainNode();}
+    
     // Ruta de audio conexiones
-    fuente.connect(misNodos.volume);
-    misNodos.volume.connect(analizador);
+    fuente.connect(contextoDeAudio.volumen);
+    contextoDeAudio.volumen.connect(contextoDeAudio.analizador);
+	contextoDeAudio.volumen.connect(contextoDeAudio.destination);
     return fuente;
 }
 
-function reproducirSonido() {
-	
-	if (suena) {
-		 // Stop
-        var fuente = miFuente;
-        fuente.stop(0);
-        retardo += contextoDeAudio.currentTime - this.comienzo;
-        console.log('Pausado en', retardo);
-        // Grabar posición donde se pausó.
-        document.querySelector('#play').innerHTML = '&nbsp;Reproducir';
-		 
-		 $('#play').removeClass('glyphicon glyphicon-pause btn-danger');
-		 $('#play').addClass('glyphicon glyphicon-play btn-info');
-         
-		 //añadir texto al marco!!
-		 //textoEnMarco();
-		
-	} else {
-			comienzo = contextoDeAudio.currentTime;
-			// creamos los nodos
-			analizador = contextoDeAudio.createAnalyser();
-			//analizador.smoothingTimeConstant = 0.85;
-			analizador.fftSize = 2048;
-			analizador.connect(contextoDeAudio.destination);
-			
-			var fuente = contextoDeAudio.createBufferSource();
-			fuente.buffer = mibuffer;
-			fuente.loop = true;
-			fuente = cadenaDeAudio(fuente);
-			
-			// podemos pasar también contextoDeAudio.currentTime
-			fuente.start(0, retardo % fuente.buffer.duration);
-			//Estado del botón
-			document.querySelector('#play').innerHTML = '&nbsp;Pausar';
-			$('#play').removeClass('glyphicon glyphicon-play btn-info');
-		    $('#play').addClass('glyphicon glyphicon-pause btn-default');
-		 	//Estado del texto en el marco
-			/*var parrafo = document.getElementById("provisional");
-           parrafo.parentNode.removeChild(parrafo);*/
-		   
-			$('.volumen').css('display', 'block');
-			requestAnimationFrame(analisis.bind(this))
-			//espectro = setInterval(drawSpectrum, 20); //llamamos a la función dibujarEspectro cada 20 ms
-			//Para el análisis se utiliza requestAnimationFrame, pero también existen funciones nativas de javascript como setInterval
-			//resolucion = setInterval(dibujaEspectro, 20);
-			//tiempo = setInterval(dibujarOnda, 20);
-			suena == true;
-			miFuente = fuente;
-
-	}
-	this.suena = !this.suena;
-
-}
-
-function parar() {
-    var fuente = miFuente;
-    fuente.noteOff(0);
-    clearInterval(espectro);
-}
-
-
-
-function analisis() {
+function dibujaEspectro() {
+	//Función de dibujo y análisis.
 	//FRECUENCIA: Tomamos un byte de enteros, array de 256 valores de amplitud y 1028 muestras
-    var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
-    analizador.getByteFrequencyData(ByteDatosFrec);
+    var ByteDatosFrec = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteFrequencyData(ByteDatosFrec);
 	
 	//llamamos a las funciones de dibujo (Canvas de resolución y forma de onda)
 	dibujarEspectroDeResolucion(ByteDatosFrec);
 	dibujarOnda();
-	
-	
-	
-	
+
 	//Canvas principal
 	var canvas = document.getElementById('principal');
     var ctx = canvas.getContext('2d');
@@ -222,7 +149,7 @@ function analisis() {
     (document.querySelector(".nyquist")).innerHTML = nyquist;
     (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
     (document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
-    (document.querySelector(".fftsize")).innerHTML = analizador.fftSize;
+    (document.querySelector(".fftsize")).innerHTML = contextoDeAudio.analizador.fftSize;
     //--------------
     var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
     var maximo = ByteDatosFrec[0];
@@ -235,7 +162,7 @@ function analisis() {
     //var valoresordenados = new Array();
     //for (var i = 0; i < NumerodeBarras; i++) {
     //calculo directo del máximo	
-/*
+    /*
 			var losmayores = new Array();
 			losmayores = Math.max.apply( Math, ByteDatosFrec );
 			console.log(
@@ -260,7 +187,7 @@ function analisis() {
 			 ctx.fillStyle = "rgb(225,225,225)";
             ctx.fillRect(m, margen, bar_width, altobarra);
             var pos = m;
-            var frecuencia = ((pos * contextoDeAudio.sampleRate) / analizador.fftSize);
+            var frecuencia = ((pos * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
         } else {
 			 //color oscuro al resto
             ctx.fillStyle = "rgb(112,96,94)"
@@ -358,7 +285,7 @@ function analisis() {
         var Bb = [11, 23, 45];
         var Bbb = [11, 22, 45];
         //
-		}else if (contextoDeAudio.sampleRate=='48000' && sw==0){
+		}else if (contextoDeAudio.sampleRate=='48000' && sw==0 ){
 			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
 			sw=1;
 			}
@@ -381,7 +308,7 @@ function analisis() {
             for (i = 0; i < posiciones.length; i++) {
                 valoresordenados[i] = objeto[i][0];
                 posicionesordenadas[i] = objeto[i][1];
-                frecuenciasordenadas[i] = parseInt((posicionesordenadas[i] * contextoDeAudio.sampleRate) / analizador.fftSize);
+                frecuenciasordenadas[i] = parseInt((posicionesordenadas[i] * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
             }(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0, 10);
             (document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0, 8);
             //console.log(posicionesordenadas);
@@ -665,7 +592,7 @@ function analisis() {
             }
         }
     } // fin bucle para valores mayores que el umbral
-requestAnimationFrame(analisis.bind(this))
+requestAnimationFrame(dibujaEspectro.bind(this))
 
 } // fin dibujar espectro canvas principal y análisis
 
@@ -714,8 +641,8 @@ function dibujarEspectroDeResolucion(ByteDatosFrec) {
 //Dibujar forma de onda en la línea de tiempo
 function dibujarOnda(tiempos){
 //TIEMPO: creamos un array de bytes para dibujar la forma de onda:
-	var tiempos = new Uint8Array(analizador.frequencyBinCount);
-    analizador.getByteTimeDomainData(tiempos);	
+	var tiempos = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteTimeDomainData(tiempos);	
 	var marcotiempo = document.querySelector('#canvasonda');
     var ctxo = marcotiempo.getContext('2d');
     var ancho = document.getElementById('marcoonda').offsetWidth - 80;
@@ -724,12 +651,12 @@ function dibujarOnda(tiempos){
    
 	
 // Dibujamdo el Gráfico en el dominio del tiempo.
-  for (var i = 0; i < analizador.frequencyBinCount; i++) {
+  for (var i = 0; i < contextoDeAudio.analizador.frequencyBinCount; i++) {
     var valor = tiempos[i];
     var porcentaje = valor / 256;
     var amplitud = 200 * porcentaje;
     var ajuste = 200 - amplitud - 1;
-    var anchopixel = ancho/analizador.frequencyBinCount;
+    var anchopixel = ancho/contextoDeAudio.analizador.frequencyBinCount;
     ctxo.fillStyle = 'white';
     ctxo.fillRect(i * anchopixel, ajuste, 1, 2);
   }	
@@ -814,18 +741,42 @@ function potenciometro(slider) {
     if (contextoDeAudio.activeSourceCount > 0) {
         if (slider.id == 'volume') {
             var volume = slider.value;
-            misNodos.volume.gain.value = volume;
+            contextoDeAudio.volume.gain.value = volume;
         }
     }
 } 
 
-
+ function textoPlayMic(){
+		 
+		 var texto = $('#microfono');
+            var icono = texto.find('span'); 
+            texto.html('Usar micrófono&nbsp;');
+            texto.append(icono);
+		 $('#microfono').removeClass('btn-warning');
+		 $('#microfono').addClass('btn-success');
+		 $('#iconom').removeClass('glyphicon glyphicon-pause');
+		 $('#iconom').addClass('glyphicon glyphicon-user');
+		 
+		
+ }
+ 
+ function textoPausaMic(){
+	 
+	 var texto = $('#microfono');
+            var icono = texto.find('span'); 
+            texto.html('Pausar micrófono&nbsp;');
+            texto.append(icono);
+		 $('#microfono').removeClass('btn-success');
+		 $('#microfono').addClass('btn-warning');
+		 $('#iconom').removeClass('glyphicon glyphicon-user');
+		 $('#iconom').addClass('glyphicon glyphicon-pause');
+}
 </script>
 
 
 </head>
 
-<body onload="init();">
+<body onload="prettyPrint();inicializar();">
     <div class="navbar navbar-inverse navbar-fixed-top bs-docs-nav">
         <div class="container">
             <div class="navbar-header">
@@ -855,17 +806,16 @@ function potenciometro(slider) {
 
         <div class="jumbotron" id="pantalla" data-placement="bottom" data-toggle="tooltip"  title=
                             "Este display muestra un análisis en frecuencia de la señal de audio, indicando los picos de frecuencia. Durante el análisis, estos picos serán considerados como armónicos y comprobaremos su correspondencia con las notas musicales generadas por una guitarra de afinación estándar. MI-LA-RE-SOL-SI-MI">
-        
+        <div id="espectro"><div class="marco"></div><div id="provisional"></div></div>
             <canvas height="200" id="principal" width="1024"></canvas>
         </div>
 
         <div class="row marketing">
             <div class="col-md-5">
                 <div class="btn-group btn-group-lg">
-                    <button class="btn btn-default btn-info glyphicon glyphicon-play" id="play" onclick=
-                    "reproducirSonido(this)" type=
-                    "button"> Reproducir</button>&nbsp;<button class=
-                    "btn btn-default btn-success glyphicon glyphicon-user" id="microfono" onclick="sonidoDirecto()"> Usar microfono<sup>*</sup></button>
+                   <button id="play" class="btn btn-info " onclick="playPause(this)" type="button" >Reproducir <span  id="icono" class="glyphicon glyphicon-play"></span></button>
+&nbsp;<button class=
+                    "btn btn-default btn-success" id="microfono" onclick="sonidoDirecto()">Usar microfono <sup>*</sup> <span  id="iconom" class="glyphicon glyphicon-user"></span></button>
                 </div><br>
                 <sub>*Necesitas utilizar <a href=
                 "http://www.google.es/intl/es/chrome/browser/" target=
