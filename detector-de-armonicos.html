@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <title>Detector de Armónicos</title>
@@ -45,22 +45,37 @@
 button sup { font-size:9px;}
  #provisional{ position:absolute; color:#FFF}
 </style>
-<script src="comunes.js"></script>
+<script type="text/javascript"  src="notas.js"></script>
+<script type="text/javascript" src="comunes.js"></script>
 <script>
 var intervalosnota;
 //------Si USAMOS  MICrófono
 
 function sonidoDirecto() {
-	if (pausa==false || suena){
-		//contextoDeAudio.volumen.disconnect();
-		 miFuente.disconnect();
-		 //añadir texto al marco!!
-		 pulsaElBotonReproducir();
+	if(suena)
+	playPause();
+	
+	
+	if (pausa){
+			if(!suena && pausa){
+				//Vengo del silencio-> borro texto en marco
+	   			var parrafo = document.getElementById("provisional");
+      			 parrafo.parentNode.removeChild(parrafo);
+				}
+		
 		 //Cambiar estadomic
-		 textoPlayMic();
-	   pausa= true;
+		 textoPausaMic();
+		 tomarEntradaMic({audio:true}, al_aire);
+	    pausa= false;
 		}else{
-	   tomarEntradaMic({audio:true}, al_aire);
+
+		miFuente.disconnect();
+		//Estado del botón de entrada de mic
+	   textoPlayMic();
+	   //Vengo del silencio-> borro texto en marco
+	   pulsaElBotonReproducir();
+	   pausa=true;
+	   //tomarEntradaMic({audio:true}, al_aire);
 		}
 }
 
@@ -89,15 +104,10 @@ function al_aire(entrada) {
     contextoDeAudio.analizador.fftSize = 2048;
     //cadenaDeAudio(fuente);
 	fuente.connect(contextoDeAudio.analizador);
-    requestAnimationFrame(dibujaEspectro.bind(this))
-	 miFuente = fuente;
+    requestAnimationFrame(dibujaEspectro.bind(this));
+	miFuente = fuente;
+
 	
-	//Estado del botón de entrada de mic
-	textoPausaMic();
-	//Eliminar el provisional 
-	var parrafo = document.getElementById("provisional");
-    parrafo.parentNode.removeChild(parrafo);
-	pausa=false;
 }
 
 //establecemos la cadena de audio 
@@ -106,7 +116,7 @@ function cadenaDeAudio(fuente) {
 	contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
     //Analizador
     contextoDeAudio.analizador.smoothingTimeConstant = 0.8;
-    contextoDeAudio.analizador.fftSize = 1024;
+    contextoDeAudio.analizador.fftSize = 2048;
     contextoDeAudio.analizador.minDecibels = -120;
     contextoDeAudio.analizador.maxDecibels = 0;
 	
@@ -179,7 +189,8 @@ function dibujaEspectro() {
         var altobarra = ALTO * porcentaje;
         var margen = ALTO - altobarra - 1;
         if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
-            pico = magnitud;
+            
+			 pico = magnitud;
             //Creamos nuestra matriz de valores y posiciones
 			 valores.push(pico);
             posiciones.push(m);
@@ -189,6 +200,7 @@ function dibujaEspectro() {
             var pos = m;
             var frecuencia = ((pos * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
         } else {
+			
 			 //color oscuro al resto
             ctx.fillStyle = "rgb(112,96,94)"
             ctx.fillRect(m, margen, bar_width, altobarra);
@@ -206,92 +218,25 @@ function dibujaEspectro() {
         (document.querySelector(".frecuencia")).innerHTML = frecuencia;
         //CORRESPONDENCIA DE NOTAS     
        
-	   	//Notas en función de la frecuencia de muestreo del dispositivo de entrada 
-		if (contextoDeAudio.sampleRate =='44100'){
-		// C
-        var C6 = [6, 12, 24];
-        var C6a = [6, 12, 25];
-        var C6b = [6, 12, 24];
-        // C#
-        var Cs6 = [13, 19, 26];
-        var Cs6a = [13, 19, 27];
-        var Cs6b = [13, 19, 25];
-        // D	
-        var D6 = [7, 14, 27];
-        var D6a = [7, 14, 28];
-        var D6b = [7, 14, 26];
-        var D4 = [7, 14, 27, 55];
-        var D4a = [7, 14, 27, 56];
-        var D4b = [7, 14, 27, 54];
-        // Eb
-        var Eb = [7, 14, 29]
-        var Eba = [7, 15, 29];
-        var Ebaa = [7, 14, 30];
-        var Ebaaa = [7, 15, 30];
-        var Ebb = [7, 14, 28];
-        var Ebbb = [7, 13, 28]
-        // E
-        var E6 = [8, 15, 31];
-        var E6a = [8, 15, 32];
-        var E6b = [8, 15, 30];
-        var E1 = [15, 31, 61];
-        var E1a = [15, 31, 62];
-        var E1aa = [15, 32, 62];
-        var E1b = [15, 31, 60];
-        var E1bb = [15, 30, 60];
-        // F
-        var F6 = [8, 16, 32];
-        var F6b = [8, 16, 31];
-        var F6a = [8, 16, 33];
-        var F3 = [16, 32, 65]
-        var F3b = [16, 32, 64];
-        var F3a = [16, 32, 66];
-        // F#
-        var Fs = [9, 17, 34];
-        var Fsa = [9, 17, 35];
-        var Fsaa = [9, 17, 36];
-        var Fsb = [9, 17, 33];
-        var Fsbb = [8, 17, 33];
-        //G
-        var G = [5, 9, 18, 36];
-        var Ga = [5, 9, 18, 37];
-        var Gaa = [9, 18, 37];
-        var Gb = [5, 9, 18, 35];
-        var Gbb = [9, 18, 35];
-        //G#
-        var Gs = [5, 10, 19, 39];
-        var Gsa = [5, 10, 19, 40];
-        var Gsaa = [10, 20, 39];
-        var Gsb = [5, 10, 19, 38];
-        var Gsbb = [10, 18, 38];
-        //A
-        var A5 = [5, 10, 20, 41];
-        var A5b = [5, 10, 20, 40];
-        var A5bb = [5, 10, 20, 39];
-        var A5a = [5, 10, 20, 42];
-        var A5aa = [5, 10, 21, 42];
-        var A2 = [10, 20, 41];
-        //Bb
-        var Bb = [5, 11, 22, 43];
-        var BBb = [11, 21, 43];
-        var Bbbb = [11, 21, 42];
-        var Bba = [5, 11, 22, 44];
-        var Bbaa = [11, 22, 43];
-        var B2 = [11, 22, 43];
-        //B
-        var B = [11, 23, 46];
-        var Ba = [11, 23, 47];
-        var Baa = [11, 24, 47];
-        var Bb = [11, 23, 45];
-        var Bbb = [11, 22, 45];
-        //
-		}else if (contextoDeAudio.sampleRate=='48000' && sw==0 ){
+	   	 if (contextoDeAudio.sampleRate=='48000' && sw==0 ){
 			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
 			sw=1;
 			}
 
         //Compruebo cuando he completado un ciclo de muestras 
         if (m == ByteDatosFrec.length) {
+			//Si tengo valores marco la casilla de detección
+			 if(valores[0] != null){
+				 $('.db').css('background-color', '#5cb85c');
+				 $('.ojo').removeClass('glyphicon-eye-close');
+				 $('.ojo').addClass('glyphicon-eye-open');
+				 $('.ojo').css('color','white');
+				 }else{
+				 $('.db').css('background-color', '#f9f9f9');
+				 $('.ojo').removeClass('glyphicon-eye-open');
+				 $('.ojo').addClass('glyphicon-eye-close');
+				 $('.ojo').css('color','rgb(51, 51, 51)');
+				 }
             //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
             var valoresordenados = new Array();
             var posicionesordenadas = new Array();
@@ -325,270 +270,7 @@ function dibujaEspectro() {
                 //comprobar todas las notas
                 //Notas--------
                 //comprobar todas las notas
-                //C
-                if (comprobar(C6, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'C';
-                    (document.querySelector("#C")).className = 'nota_aprox';
-                }
-                if (comprobar(C6a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'C+';
-                    (document.querySelector("#C")).className = 'nota_alta';
-                }
-                if (comprobar(C6b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-C';
-                    (document.querySelector("#C")).className = 'nota_baja';
-                }
-                //C#
-                if (comprobar(Cs6, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'C#';
-                    (document.querySelector("#Cs")).className = 'nota_aprox';
-                }
-                if (comprobar(Cs6a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'C#+';
-                    (document.querySelector("#Cs")).className = 'nota_alta';
-                }
-                if (comprobar(Cs6b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-C#';
-                    (document.querySelector("#Cs")).className = 'nota_baja';
-                }
-                //D
-                if (comprobar(D6, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'D';
-                    (document.querySelector("#D")).className = 'nota_aprox';
-                }
-                if (comprobar(D6a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'D+';
-                    (document.querySelector("#D")).className = 'nota_alta';
-                }
-                if (comprobar(D6b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-D';
-                    (document.querySelector("#D")).className = 'nota_baja';
-                }
-                if (comprobar(D4, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'D';
-                    (document.querySelector("#D")).className = 'nota_aprox';
-                }
-                if (comprobar(D4a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'D+';
-                    (document.querySelector("#D")).className = 'nota_alta';
-                }
-                if (comprobar(D4b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-D';
-                    (document.querySelector("#D")).className = 'nota_baja';
-                }
-                //Eb
-                if (comprobar(Eb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Eb';
-                    (document.querySelector("#Eb")).className = 'nota_aprox';
-                }
-                if (comprobar(Eba, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Eb+';
-                    (document.querySelector("#Eb")).className = 'nota_alta';
-                }
-                if (comprobar(Ebaa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Eb+';
-                    (document.querySelector("#Eb")).className = 'nota_alta';
-                }
-                if (comprobar(Ebb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-Eb';
-                    (document.querySelector("#Eb")).className = 'nota_baja';
-                }
-                if (comprobar(Ebbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-Eb';
-                    (document.querySelector("#Eb")).className = 'nota_baja';
-                }
-                //E
-                if (comprobar(E6, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'E';
-                    (document.querySelector("#E")).className = 'nota_aprox';
-                }
-                if (comprobar(E6a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'E+';
-                    (document.querySelector("#E")).className = 'nota_alta';
-                }
-                if (comprobar(E6b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-E';
-                    (document.querySelector("#E")).className = 'nota_baja';
-                }
-                if (comprobar(E1, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'E';
-                    (document.querySelector("#E")).className = 'nota_aprox';
-                }
-                if (comprobar(E1a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'E+';
-                    (document.querySelector("#E")).className = 'nota_alta';
-                }
-                if (comprobar(E1aa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'E+';
-                    (document.querySelector("#E")).className = 'nota_alta';
-                }
-                if (comprobar(E1b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-E';
-                    (document.querySelector("#E")).className = 'nota_baja';
-                }
-                if (comprobar(E1bb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-E';
-                    (document.querySelector("#E")).className = 'nota_baja';
-                }
-                //F
-                if (comprobar(F6, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F';
-                    (document.querySelector("#F")).className = 'nota_aprox';
-                }
-                if (comprobar(F6a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F+';
-                    (document.querySelector("#F")).className = 'nota_alta';
-                }
-                if (comprobar(F6b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-F';
-                    (document.querySelector("#F")).className = 'nota_baja';
-                }
-                if (comprobar(F3, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F';
-                    (document.querySelector("#F")).className = 'nota_aprox';
-                }
-                if (comprobar(F3a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F+';
-                    (document.querySelector("#F")).className = 'nota_alta';
-                }
-                if (comprobar(F3b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-F';
-                    (document.querySelector("#F")).className = 'nota_baja';
-                }
-                //F#
-                if (comprobar(Fs, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F#';
-                    (document.querySelector("#Fs")).className = 'nota_aprox';
-                }
-                if (comprobar(Fsa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F#+';
-                    (document.querySelector("#Fs")).className = 'nota_alta';
-                }
-                if (comprobar(Fsaa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'F#+';
-                    (document.querySelector("#Fs")).className = 'nota_alta';
-                }
-                if (comprobar(Fsb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-F#';
-                    (document.querySelector("#Fs")).className = 'nota_baja';
-                }
-                if (comprobar(Fsbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-F#';
-                    (document.querySelector("#Fs")).className = 'nota_baja';
-                }
-                //G
-                if (comprobar(G, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G';
-                    (document.querySelector("#G")).className = 'nota_aprox';
-                }
-                if (comprobar(Ga, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G+';
-                    (document.querySelector("#G")).className = 'nota_alta';
-                }
-                if (comprobar(Gaa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G+';
-                    (document.querySelector("#G")).className = 'nota_alta';
-                }
-                if (comprobar(Gb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-G';
-                    (document.querySelector("#G")).className = 'nota_baja';
-                }
-                if (comprobar(Gbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-G';
-                    (document.querySelector("#G")).className = 'nota_baja';
-                }
-                //G#
-                if (comprobar(Gs, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G#';
-                    (document.querySelector("#Gs")).className = 'nota_aprox';
-                }
-                if (comprobar(Gsa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G#+';
-                    (document.querySelector("#Gs")).className = 'nota_alta';
-                }
-                if (comprobar(Gsaa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'G#+';
-                    (document.querySelector("#Gs")).className = 'nota_alta';
-                }
-                if (comprobar(Gsb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-G#';
-                    (document.querySelector("#Gs")).className = 'nota_baja';
-                }
-                if (comprobar(Gsbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-G#';
-                    (document.querySelector("#Gs")).className = 'nota_baja';
-                }
-                //A
-                if (comprobar(A5, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'A';
-                    (document.querySelector("#A")).className = 'nota_aprox';
-                }
-                if (comprobar(A5a, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'A+';
-                    (document.querySelector("#A")).className = 'nota_alta';
-                }
-                if (comprobar(A5aa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'A+';
-                    (document.querySelector("#A")).className = 'nota_alta';
-                }
-                if (comprobar(A5b, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-A';
-                    (document.querySelector("#A")).className = 'nota_baja';
-                }
-                if (comprobar(A5bb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-A';
-                    (document.querySelector("#A")).className = 'nota_baja';
-                }
-                if (comprobar(A2, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'A';
-                    (document.querySelector("#A")).className = 'nota_aprox';
-                }
-                //Bb
-                if (comprobar(Bb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Bb';
-                    (document.querySelector("#Bb")).className = 'nota_aprox';
-                }
-                if (comprobar(Bba, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Bb+';
-                    (document.querySelector("#Bb")).className = 'nota_alta';
-                }
-                if (comprobar(Bbaa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Bb+';
-                    (document.querySelector("#Bb")).className = 'nota_alta';
-                }
-                if (comprobar(BBb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-Bb';
-                    (document.querySelector("#Bb")).className = 'nota_baja';
-                }
-                if (comprobar(Bbbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-Bb';
-                    (document.querySelector("#Bb")).className = 'nota_baja';
-                }
-                if (comprobar(B2, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'Bb';
-                    (document.querySelector("#Bb")).className = 'nota_aprox';
-                }
-                //B
-                if (comprobar(B, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'B';
-                    (document.querySelector("#B")).className = 'nota_aprox';
-                }
-                if (comprobar(Ba, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'B+';
-                    (document.querySelector("#B")).className = 'nota_alta';
-                }
-                if (comprobar(Baa, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = 'B+';
-                    (document.querySelector("#B")).className = 'nota_alta';
-                }
-                if (comprobar(Bb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-B';
-                    (document.querySelector("#B")).className = 'nota_baja';
-                }
-                if (comprobar(Bbb, posiciones) === true) {
-                    (document.querySelector(".nota")).innerHTML = '-B';
-                    (document.querySelector("#B")).className = 'nota_baja';
-                }
+                comprobaciones(posiciones);
             }
         }
     } // fin bucle para valores mayores que el umbral
@@ -648,17 +330,22 @@ function dibujarOnda(tiempos){
     var ancho = document.getElementById('marcoonda').offsetWidth - 80;
     marcotiempo.width = ancho;
     marcotiempo.height = 200;
-   
+    ctxo.fillStyle = 'white';
+	ctxo.moveTo(0, 128);
+        ctxo.lineTo(ancho, 128);
+        ctxo.stroke();
+        ctxo.fillText('0', 5, 128)
 	
 // Dibujamdo el Gráfico en el dominio del tiempo.
   for (var i = 0; i < contextoDeAudio.analizador.frequencyBinCount; i++) {
     var valor = tiempos[i];
     var porcentaje = valor / 256;
-    var amplitud = 200 * porcentaje;
-    var ajuste = 200 - amplitud - 1;
+    var amplitud = 256 * porcentaje;
+    var ajuste = 256 - amplitud - 1;
     var anchopixel = ancho/contextoDeAudio.analizador.frequencyBinCount;
     ctxo.fillStyle = 'white';
     ctxo.fillRect(i * anchopixel, ajuste, 1, 2);
+	
   }	
 	
 	
@@ -831,35 +518,38 @@ function potenciometro(slider) {
                     </ul>
                 </div>
 
-                <div class="alert alert-success">
-                    <h3>NOTA: &nbsp;<strong><span class=
-                    "nota">--</span></strong></h3>
-
-                    <p>Tamaño de la FFT<span class="fftsize">0</span></p>
-
-                    <p>Frecuencia de Muestreo: <span class=
-                    "muestreo">0</span></p>
-
-                    <p>Frecuencia de Nyquist: <span class=
-                    "nyquist">0</span></p>
-
-                    <p>Longitud del Array de datos de frecuencia. 8 Bits :
-                    <span class="arrayFreq">0</span></p><span>Valor del máximo:
-                    &nbsp;<strong><span class=
-                    "valor">0</span></strong></span><br>
-                    <span>Posiciones de los
-                    armónicos:&nbsp;<strong><span class="posicion">posicion</span></strong></span><br>
-
-                    <span class=
-                    "glyphicon glyphicon-sort-by-attributes-alt">Posiciones&nbsp;<strong><span class="posicionord">posicion</span></strong></span><br>
-
-                    <span>Picos de frecuencia:&nbsp;<strong><span class=
-                    "picos">picos</span>&nbsp;</strong>Hz</span><br>
-                    <span class=
-                    "glyphicon glyphicon-sort-by-attributes-alt">Frecuencias:&nbsp;<strong><span class="frecuenciasordenadas">posicion</span></strong></span><br>
-
-                    <span>Mayor Frecuencia:&nbsp;<strong><span class=
-                    "frecuencia">frecuencia</span>&nbsp;</strong>Hz</span><br>
+               
+                		<div class="bs-glyphicons">
+                      <ul class="bs-glyphicons-list">
+                        <li><span class="glyphicon glyphicon-music"></span><span class="glyphicon-class">NOTA: &nbsp;<span class="nota glyphicon-class">--</span></span></li>
+                
+                        <li><span class="glyphicon glyphicon-resize-full"></span><span class="glyphicon-class">Tamaño de la FFT</span> <span class="fftsize glyphicon-class">0</span></li>
+                
+                        <li><span class="glyphicon glyphicon-th-list"></span><span class="glyphicon-class">Frecuencia de Muestreo:</span> <span class=
+                        "glyphicon-class muestreo">0</span></li>
+                
+                        <li><span class="glyphicon glyphicon-pushpin"></span><span class="glyphicon-class">Frecuencia de Nyquist:</span> <span class="nyquist glyphicon-class">0</span></li>
+                
+                        <li><span class="glyphicon glyphicon-resize-horizontal"></span><span class="glyphicon-class">Long. del Array de datos de frec. 8 Bits :</span> <span class=
+                        "arrayFreq glyphicon-class">0</span></li>
+                
+                        <li><span class="glyphicon glyphicon-star-empty"></span><span class="glyphicon-class">Valor del máximo: &nbsp;</span><span class=
+                        "valor glyphicon-class">0</span></li>
+                
+                        <li><span class="glyphicon glyphicon-list"></span><span class="glyphicon-class">Posiciones de los armónicos:&nbsp;</span><span class=
+                        "posicion glyphicon-class">posicion</span></li>
+                
+                        <li><span class="glyphicon glyphicon-sort-by-attributes-alt"></span><span class="glyphicon-class">Posiciones&nbsp;</span><span class="posicionord glyphicon-class">-</span></li>
+                
+                        <li><span class="glyphicon glyphicon-indent-right"></span><span class="glyphicon-class">Picos de frecuencia:&nbsp;</span><span class=
+                        "picos glyphicon-class">picos</span>&nbsp;Hz</li>
+                
+                        <li><span class="glyphicon glyphicon-sort-by-attributes-alt"></span><span class="glyphicon-class">Frecuencias:&nbsp;</span><span class="frecuenciasordenadas glyphicon-class">-</span></li>
+                
+                        <li><span class="glyphicon glyphicon-arrow-up"></span><span class="glyphicon-class">Mayor Frecuencia:&nbsp;<span class="frecuencia glyphicon-class">frecuencia</span>&nbsp;Hz</span></li>
+                        <li class="db"><span class=" ojo glyphicon glyphicon glyphicon-eye-close"></span><span class="glyphicon-class">Umbral de detección:&nbsp;<span class="glyphicon-class">-6</span>&nbsp;dB</span></li>
+                  
+                    </ul>	
                 </div>
             </div>
 
@@ -1375,29 +1065,51 @@ function potenciometro(slider) {
                 pantalla un resultado bastante aproximado.</p>
 
                 <h3>Funcionamiento</h3>Una vez procesamos la petición
-                <code>.webkitGetUserMedia</code> y la conectamos a un nodo
-                analizador en nuestra cadena de audio, podemos trabajar con la
-                salida del analizador, que nos devolverá bytes de enteros para
-                las muestras de señal en el dominio de la frecuencia:
+                <code>.webkitGetUserMedia</code> y creada la fuente de audio, podemos enrutar la señal en nuestra cadena de audio y comenzar el procesado.
+El nodo analizador es clave para el análisis, pues nos proveerá los datos necesarios para realizar el cálculo o aproximación de nota, y utilizaremos la función <code>requestAnimationFrame</code> para realizar el análisis y el dibujo, solicitaremos los datos de la salida del nodo analizador para trabajar con ellos.
 
-                <div class="highlight">
-                    <pre class="prettyprint">
-<code class="language-js">
-//Byte de enteros, array de 256 valores de amplitud
-var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
-analizador.getByteFrequencyData(ByteDatosFrec);
-    </code>
-</pre>
-                </div>
+                
             </div>
         </div>
 
         <div class="row marketing">
             <div class="col-lg-12">
-                Los algoritmos de detección y graficado de notas procesan los
-                valores de este array de datos recuperando la salida del nodo
-                analizador 20 veces por segundo. Los bloques principales del
-                análisis son:
+            <div class="highlight">
+                    <pre class="prettyprint">
+<code class="language-js">
+//Tomamos un byte de enteros, array de 256 valores de amplitud y 1028 muestras
+var ByteDatosFrec = new Uint8Array(analizador.frequencyBinCount);
+analizador.getByteFrequencyData(ByteDatosFrec);
+
+    </code>
+</pre>
+                </div>
+                <p>Una vez contamos con un array de datos de la ventana de frecuencia, podemos recorrerlo para obtener sus picos, que serán los valores máximos del vector que superen un umbral.
+Para optimizar el funcionamiento y descartar sonidos de fondo, se ha establecido un umbral en la detección de pico de valor 128 en la escala de amplitud de la señal, esto es la mitad del valor máximo que se puede detectar. Este sería el primer bloque del algoritmo de análisis.  </p>
+<div class="highlight">
+                    <pre class="prettyprint">
+<code class="language-js">
+//Recorrer el array de datos de frecuencia Comparar valores mayores que el umbral
+for (var m = 0; m <= (ByteDatosFrec.length); m++) {
+    var magnitud = ByteDatosFrec[m];
+    var siguiente = ByteDatosFrec[m + 1];
+    var anterior = ByteDatosFrec[m - 1];
+    // se establece el umbral a 128. 
+    if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
+
+        pico = magnitud;
+        //Creamos nuestra matriz de valores y posiciones
+        valores.push(pico);
+        posiciones.push(m);
+
+        var pos = m;
+        var frecuencia = ((pos * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
+    }
+    </code>
+</pre>
+                </div>
+<p>Podemos enumerar las etapas del algoritmo de detección, de la siguiente manera:</p>
+
 
                 <div class="panel panel-default pull-left">
                     <div class="panel-heading">
@@ -1406,25 +1118,34 @@ analizador.getByteFrequencyData(ByteDatosFrec);
 
                     <div class="panel-body">
                         <ul class="list-unstyled">
-                            <li><strong>Comparador:</strong> El algoritmo
-                            recorre sólo los bytes de datos superiores a un
-                            umbral, establecido en 128. El objeto es reducir la
-                            carga de procesamiento y eliminar el ruido de
-                            fondo.</li>
-
-                            <li><strong>Detector de pico:</strong> la función
-                            detecta la posición y el valor de los picos de este
-                            array de datos, los cuales serán tratados como
-                            armónicos .</li>
-
-                            <li><strong>Banco de armónicos:</strong> Se cruzan
-                            los datos obtenidos con un banco de armónicos por
-                            nota, en forma de arrays de 3, 4 ò 5 valores.</li>
-
-                            <li><strong>Display de datos:</strong> Se
-                            representa el código de nota y una tabla para
-                            observar la permanencia de la serie armónica en el
-                            sonido.</li>
+                           
+                            <li><strong>Bucle Comparador:</strong> recorre el vector de datos de frecuencia y selecciona los picos y sus posiciones. Sólo añade los valores detectados como pico y que superen el umbral de 128 valores del Byte. Se crean 2 vectores que formarán la matriz de posiciones y valores</li>
+                            <li><strong>Adecuación de valores para visualización:</strong> se ordenan los picos por amplitud y se limitan a un número de entradas para una visualización óptima.</li>
+                            <li><strong>Declaración de notas:</strong> Se declara un banco de 12 notas y sus desviaciones altas y bajas. Se utiliza una nemotécnica de incrementar o disminuir el valor del último armónico para el ajuste fino, por ejemplo:</li>
+                        
+                        <div class="highlight">
+                    <pre class="prettyprint">
+<code class="language-js">
+         //A
+        var A5 = [5, 10, 20, 41];
+        var A5b = [5, 10, 20, 40];
+        var A5bb = [5, 10, 20, 39];
+        var A5a = [5, 10, 20, 42];
+        var A5aa = [5, 10, 21, 42];
+        var A2 = [10, 20, 41];
+        
+</code>
+</pre>
+                </div>
+                        <p>En este fragmento de código se observa la declaración de la nota LA. Esta declaración de variables se ha optimizado para las notas susceptibles de mostrarse en la guitarra. En el ejemplo se observa la declaración de A5, que corresponde al LA de la 5ª cuerda tocada al aire, este valor es imprescindible durante el proceso de afinación general de una guitarra, así como el LA de la segunda cuerda al aire, por el que posiblemente pasemos al tensar la cuerda hacia el SI que corresponde a la 2ª cuerda en la afinación estándar. Los sufijos a, aa y b, bb indican los valores altos de esta nota que mostraremos en el display y que servirán al usuario para ajustar la tensión de la cuerda en una dirección y aproximarse al valor correcto de afinación.</p>
+                        
+                          <li><strong>Selección de nota</strong>: Este es el apartado que más se puede optimizar dentro bucle de análisis ya que por el momento consta de un condicional por cada posible nota. </li>
+                          <li><strong>Visualización</strong>: Los valores se imprimen en pantalla en tiempo de ejecución de la interfaz <code>requestAnimationFrame</code>, por lo que el parpadeo es rápido. Esto es una buena cualidad para variaciones de tensión rápidas en la cuerda, que generen cambios de afinación repentinos.</li>
+                         </ul>
+                          
+                          
+                          
+                          
                         </ul>
                     </div>
                

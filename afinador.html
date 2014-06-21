@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
      <meta name="description" content="Afinador de guitarra basado en Algoritmo de detección armónica Web Audio API. Javascript">
@@ -10,7 +10,7 @@
 	<link rel="apple-touch-icon" href="images/icono57.png">
 	<link rel="apple-touch-icon" sizes="72x72" href="images/icono72.png">
 	<link rel="apple-touch-icon" sizes="114x114" href="images/icono114.png">
-    <title>Detector de Armónicos. Afinador de guitarra experimental con Javascript</title>
+    <title>Detector de Armónicos. Afinador de guitarra experimental con Javascript. Estudio sobre la Web Audio API</title>
     <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="http://getbootstrap.com/assets/css/docs.min.css" rel="stylesheet">
     <style>
@@ -36,6 +36,7 @@
     .ejsuccess{
     background-color:#d0e9c6;}  
     </style>
+    <script type="text/javascript"  src="notas.js"></script>
     <script>
     
         var contextoDeAudio, analizador, mibuffer, procesado,
@@ -83,14 +84,12 @@
             analizador = contextoDeAudio.createAnalyser();
             analizador.fftSize = 2048;            
             cadenaDeAudio(source);
-            espectro = setInterval(calculo, 20); //llamamos a la función dibujarEspectro cada 20 ms
+            requestAnimationFrame(calculo.bind(this));
             miFuente = source;
         }  
       //establecemos la cadena de audio 
         function cadenaDeAudio(source) {
 
-            // Ruta de audio conexiones
-           
             source.connect(analizador);
 
             return source;
@@ -127,8 +126,7 @@
                               var magnitud = ByteDatosFrec[m];
                               var siguiente = ByteDatosFrec[m+1];
                               var anterior = ByteDatosFrec[m-1];
-                              //variables dibujo
-                                  
+                                                               
                                 var porcentaje = magnitud / 256;
                                if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)){
                                      
@@ -137,116 +135,22 @@
                                  posiciones.push(m);
                                                                   
                                  var pos = m;
-                                 var frecuencia = ((pos*contextoDeAudio.sampleRate)/analizador.fftSize);
+                                 //var frecuencia = ((pos*contextoDeAudio.sampleRate)/analizador.fftSize);
                     
                                 
                                  }
-                                  
-                                  
-                                   
-                            
-                            //termina para los mayores de 100
-
-                
-                (document.querySelector(".valor")).innerHTML = maximo;
-                (document.querySelector(".picos")).innerHTML = valores;
-                (document.querySelector(".posicion")).innerHTML = posiciones;
-                (document.querySelector(".frecuencia")).innerHTML = frecuencia;
+     
         
-        //CORRESPONDENCIAS DE NOTAS     
-                
-                    // Sexta cuerda
-                var MIb6 = [3,13,25];
-                var MI6b = [7,10,14,17];
-                var MI6 = [7,14,28];
-                var MI6a = [7,14,29];
-                var FA6 = [4,7,15];
-                var FA6a = [4,8,16];
-                var FAs6 = [4,8,12,16];
-                var FAs6a = [4,8,12,17];
-                var SOL6 = [4,8,13,17];
-                var SOL6a = [4,8,13,18];
-                var SOLs6 = [9,18,35];
-                var SOLs6a = [9,19,36];
-                var LA6 = [9,19,38];
-                var LA6a = [5,10,19];
-                var LAs6 = [5,10,15,20,25];
-                var LAs6a =[5,10,15,21];
-                var SI6 = [5,11,21,42];//revisa
-                var SI6a = [5,11,22,43];
-                var DO6 = [6,11,17,22];
-                var DO6a = [6,11,17,23];
-                var DOs6 = [6,12,18,24];
-                var DOs6a = [6,12,18,25];
-                var RE6 = [6,13,19,25];
-                var RE6a = [6,13,20,26];
-                var REs6 = [7,13,20];
-                var REs6a = [7,13,21];
-                var MI68 = [7,14,28,56,225];
-                //Quinta cuerda
-                var LA58 =[9,19,28];
-                var RE5 = [6,19,25];
-                var RE5a = [6,13,26];
-                var MI5 = [7,14,21,28];
-                var MI5a = [7,14,22,29];
-                var FA5 = [15,22,30];
-                var FA5a = [15,23,31];
-                var FAs5 = [8,16,63];
-                var FAs5a = [8,17,64];
-                var SOL5 = [8,17,25];
-                var SOL5a = [8,17,26];
-                var SOLs5 = [9,18,27];
-                var SOLs5a = [9,18,28];
-                
-                //CUARTA CUERDA
-                var LA4 =[19,38,75];
-                var LAs4 =[10,20,30];
-                var LAs4a =[10,20,31];
-                var SI4 = [11,21,63];
-                var DO4 = [11,22,33];
-                //var DOs4 = [12,24];
-                var RE48 = [6,25,50];
-                var RE48a = [6,26,52];
-                //Tercera CUERDA
-                // SEGUMDA CUERDA
-                var SI2 = [21,42,63];
-                var MI2 = [14,28,56];
-                // PRIMERA CUERDA
-                var MI1 = [14,28,56];
-                var FA1 = [15,30,60];
-                var FAs1 = [6,63,126];
-                var SOL1 = [17,67,134];     
-                            //SEXTA CUERDA      
+        ///CORRESPONDENCIA DE NOTAS     
+       
+	   	 if (contextoDeAudio.sampleRate=='48000' && sw==0 ){
+			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
+			sw=1;
+			}     
                 //Compruebo cuando he completado un ciclo de muestras 
                     if(m == ByteDatosFrec.length){
                         
-                        //var objeto = new Array();
-                        //objeto.valor=null;
-                        //objeto.posicion =null
-            //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
-                    
-                    /*var objeto = new Array();
-                        for (i=0; i<= valores.length;i++){
-                            
-                        
-                                objeto[i]= new  Array(2); 
-                                objeto[i][0]= valores[i];
-                                objeto[i][1] = posiciones[i];
-                            
-                        }
-                        objeto.sort(function(a,b){return b[0] - a[0] ;});
-                        
-                        for (i=0; i< posiciones.length;i++){
-                            valoresordenados[i] = objeto[i][0];
-                            posicionesordenadas[i] = objeto[i][1];
-                            
-                            }
-                    
-                    posiciones = posicionesordenadas;*/
-                    
-                    
-                    //---------------
-                        //console.log(objeto)
+                       
                         if(posiciones.length == 0){borra();}
                         
                     //console.log('posiciones: '+posiciones)
@@ -258,229 +162,8 @@
                             //borra();
                             //comprobar todas las notas
                             //Notas--------
-                                        if(comprobar(MIb6, posiciones)===true){
-                                            (document.querySelector(".nota")).innerHTML = '6RE#';
-                                            (document.querySelector("#REs")).className = 'danger';
-                                        }
-                                        if(comprobar(MI6b, posiciones)===true){
-                                            (document.querySelector(".nota")).innerHTML = '6MI--';
-                                            (document.querySelector("#MI")).className = 'dangera';
-                                        }
-                                if(comprobar(MI6, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6MI';
-                                    (document.querySelector("#MI")).className = 'danger';
-                                }
-                                    if(comprobar(MI6a, posiciones)===true){
-                                        (document.querySelector(".nota")).innerHTML = '6MI++';
-                                        (document.querySelector("#MI")).className = 'dangera';
-                                    }
-                                    
-                                if(comprobar(FA6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6FA';
-                                (document.querySelector("#FA")).className = 'danger';
-                                
-                                }
-                                    if(comprobar(FA6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6FA++';
-                                    (document.querySelector("#FA")).className = 'dangera';
-                                    
-                                    }
-                                if(comprobar(FAs6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6FA#';
-                                (document.querySelector("#FAs")).className = 'danger';
-                                }
-                                    if(comprobar(FAs6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6FA#++';
-                                    (document.querySelector("#FAs")).className = 'dangera';
-                                    }
-                                if(comprobar(SOL6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6SOL';
-                                (document.querySelector("#SOL")).className = 'danger';
-                                }
-                                    if(comprobar(SOL6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6SOL++';
-                                    (document.querySelector("#SOL")).className = 'dangera';
-                                    }
-                                if(comprobar(SOLs6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6SOL#';
-                                (document.querySelector("#SOLs")).className = 'danger';
-                                }
-                                    if(comprobar(SOLs6, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6SOL#++';
-                                    (document.querySelector("#SOLs")).className = 'dangera';
-                                    }
-                                if(comprobar(LA6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'LA';
-                                (document.querySelector("#LA")).className = 'danger';
-                                }
-                                    if(comprobar(LA6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'LA++';
-                                    (document.querySelector("#LA")).className = 'dangera';
-                                    }
-                                if(comprobar(LAs6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'LA#';
-                                (document.querySelector("#LAs")).className = 'danger';
-                                }
-                                    if(comprobar(LAs6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'LA#++';
-                                    (document.querySelector("#LAs")).className = 'dangera';
-                                    }
-                                if(comprobar(SI6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SI';
-                                (document.querySelector("#SI")).className = 'danger';
-                                }
-                                    if(comprobar(SI6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'SI++';
-                                    (document.querySelector("#SI")).className = 'dangera';
-                                    }
-                                if(comprobar(DO6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'DO';
-                                (document.querySelector("#DO")).className = 'danger';
-                                }
-                                    if(comprobar(DO6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'DO++';
-                                    (document.querySelector("#DO")).className = 'dangera';
-                                    }
-                                if(comprobar(DOs6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6DO#';
-                                (document.querySelector("#DOs")).className = 'danger';
-                                }
-                                    if(comprobar(DOs6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6DO#++';
-                                    (document.querySelector("#DOs")).className = 'dangera';
-                                    }
-                                if(comprobar(RE6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6RE';
-                                (document.querySelector("#RE")).className = 'danger';
-                                }
-                                    if(comprobar(RE6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = '6RE++';
-                                    (document.querySelector("#RE")).className = 'dangera';
-                                    }
-                                if(comprobar(REs6, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'RE#';
-                                (document.querySelector("#REs")).className = 'danger';
-                                }
-                                    if(comprobar(REs6a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'RE#++';
-                                    (document.querySelector("#REs")).className = 'dangera';
-                                    }
-                                if(comprobar(MI68, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = '6MI';
-                                (document.querySelector("#MI")).className = 'danger';
-                                }
-                            //QUINTA CUERDA
-                                if(comprobar(RE5, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'RE';
-                                    (document.querySelector("#RE")).className = 'danger';
-                                }
-                                    if(comprobar(RE5a, posiciones)===true){
-                                        (document.querySelector(".nota")).innerHTML = 'RE++';
-                                        (document.querySelector("#RE")).className = 'dangera';
-                                    }
-                                if(comprobar(MI5, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'MI';
-                                (document.querySelector("#MI")).className = 'danger';
-                                }   
-                                    if(comprobar(MI5a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'MI++';
-                                    (document.querySelector("#MI")).className = 'dangera';
-                                    }   
-                                if(comprobar(FA5, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'FA';
-                                (document.querySelector("#FA")).className = 'danger';
-                                }
-                                    if(comprobar(FA5a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'FA++';
-                                    (document.querySelector("#FA")).className = 'dangera';
-                                    }
-                                if(comprobar(FAs5, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'FA#';
-                                (document.querySelector("#FAs")).className = 'danger';
-                                }
-                                    if(comprobar(FAs5a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'FA#++';
-                                    (document.querySelector("#FAs")).className = 'dangera';
-                                    }
-                                if(comprobar(SOL5, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SOL';
-                                (document.querySelector("#SOL")).className = 'danger';
-                                }
-                                    if(comprobar(SOL5a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'SOL++';
-                                    (document.querySelector("#SOL")).className = 'dangera';
-                                    }
-                                if(comprobar(SOLs5, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SOL#';
-                                (document.querySelector("#SOLs")).className = 'danger';
-                                }
-                                    if(comprobar(SOLs5a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'SOL#++';
-                                    (document.querySelector("#SOLs")).className = 'dangera';
-                                    }
-                                if(comprobar(LA58, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'LA';
-                                (document.querySelector("#LA")).className = 'danger';
-                                }
-                            //CUARTA CUERDA
-                            
-                                if(comprobar(LAs4, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'LA#';
-                                (document.querySelector("#LAs")).className = 'danger';
-                                }
-                                    if(comprobar(LAs4a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'LA#++';
-                                    (document.querySelector("#LAs")).className = 'dangera';
-                                    }
-                                if(comprobar(SI4, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SI';
-                                (document.querySelector("#SI")).className = 'danger';
-                                }
-                                if(comprobar(DO4, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'DO';
-                                (document.querySelector("#DO")).className = 'danger';
-                                }
-                                //if(comprobar(DOs4, posiciones)===true){
-                                //(document.querySelector(".nota")).innerHTML = 'DO#';
-                                //}
-                                if(comprobar(RE48, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'RE';
-                                (document.querySelector("#RE")).className = 'danger';
-                                }
-                                    if(comprobar(RE48a, posiciones)===true){
-                                    (document.querySelector(".nota")).innerHTML = 'RE++';
-                                    (document.querySelector("#RE")).className = 'dangera';
-                                    }   
-                                //TERCERA CUERDA
-                            
-                            
-                                //SEGUNDA CUERDA
-                                if(comprobar(SI2, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SI';
-                                (document.querySelector("#SI")).className = 'danger';
-                                }
-                                if(comprobar(MI2, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'MI';
-                                (document.querySelector("#MI")).className = 'danger';
-                                }
-                                //PRIMERA CUERDA
-                                
-                                if(comprobar(MI1, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'MI';
-                                (document.querySelector("#MI")).className = 'danger';
-                                }
-                                if(comprobar(FA1, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'FA1';
-                                (document.querySelector("#FA")).className = 'danger';
-                                }
-                                if(comprobar(FAs1, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'FA#1';
-                                (document.querySelector("#FAs")).className = 'danger';
-                                }
-                                if(comprobar(SOL1, posiciones)===true){
-                                (document.querySelector(".nota")).innerHTML = 'SOL1';
-                                (document.querySelector("#SOL")).className = 'danger';
-                                }
+                            comprobaciones(posiciones); 
+							           
                             
                         }
                     
@@ -488,6 +171,7 @@
                                 
 
                 }
+				requestAnimationFrame(calculo.bind(this));
             }
         
     //Check notas/porciones de fecuencia

@@ -1221,7 +1221,7 @@ h1[id] {
     margin-right: 0;
   }
   .bs-glyphicons li {
-    width: 12.5%;
+   /* width: 12.5%;*/
     font-size: 12px;
   }
 }

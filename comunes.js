@@ -86,14 +86,7 @@ function playPause() {
         // Grabar posición donde se pausó.
 		
         //$('#play').text = 'Reproducir';
-		  var texto = $('#play');
-            var icono = texto.find('span'); 
-            texto.html('Reproducir&nbsp;');
-            texto.append(icono);
-		 $('#play').removeClass('btn-danger');
-		 $('#play').addClass('btn-info');
-		 $('#icono').removeClass('glyphicon glyphicon-pause ');
-		 $('#icono').addClass('glyphicon glyphicon-play btn-info');
+		 cambiaBotonaPlay();
         //Pulsa el botón reproducir!!
         pulsaElBotonReproducir();
 		avance=false;
@@ -116,17 +109,7 @@ function playPause() {
         requestAnimationFrame(dibujaEspectro.bind(this))
 		 //Variable global miFuente será source
 		 miFuente = source;
-       //JQery para cambiar el estado del botón a pausa 
-		var texto = $('#play');
-            var icono = texto.find('span'); 
-            texto.html('Pausar&nbsp;');
-            texto.append(icono);
-		 $('#play').addClass('btn-danger');
-		 $('#play').removeClass('btn-info');
-		 $('#icono').removeClass('glyphicon glyphicon-play ');
-		 $('#icono').addClass('glyphicon glyphicon-pause ');
-        var parrafo = document.getElementById("provisional");
-        parrafo.parentNode.removeChild(parrafo);
+      	cambiaBotonaPause();
     }
     this.suena = !this.suena;
 	
@@ -198,4 +181,30 @@ function parar() {
     var fuente = miFuente;
     fuente.stop(0);
     clearInterval(espectro);}
+}
+// Muestra el texto y color del botón en estado "reproducir"
+function cambiaBotonaPlay(){
+	 var texto = $('#play');
+            var icono = texto.find('span'); 
+            texto.html('Reproducir&nbsp;');
+            texto.append(icono);
+		 $('#play').removeClass('btn-danger');
+		 $('#play').addClass('btn-info');
+		 $('#icono').removeClass('glyphicon glyphicon-pause ');
+		 $('#icono').addClass('glyphicon glyphicon-play btn-info');
+}
+
+// Muestra el texto y color del botón en estado "pause"
+function cambiaBotonaPause(){
+ //JQery para cambiar el estado del botón a pausa 
+		var texto = $('#play');
+        var icono = texto.find('span'); 
+        texto.html('Pausar&nbsp;');
+        texto.append(icono);
+		 $('#play').addClass('btn-danger');
+		 $('#play').removeClass('btn-info');
+		 $('#icono').removeClass('glyphicon glyphicon-play ');
+		 $('#icono').addClass('glyphicon glyphicon-pause ');
+        var parrafo = document.getElementById("provisional");
+        parrafo.parentNode.removeChild(parrafo);
 }
