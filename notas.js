@@ -21,7 +21,7 @@
         var Ebaa = [7, 14, 30];
         var Ebaaa = [7, 15, 30];
         var Ebb = [7, 14, 28];
-        var Ebbb = [7, 13, 28]
+        var Ebbb = [7, 13, 28];
         // E
         var E6 = [8, 15, 31];
         var E6a = [8, 15, 32];

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Detector de Armónicos</title>
+<title>Estudio de la Web Audio API. Detector de Armónicos.</title>
 
  <!-- Bootstrap core CSS -->
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
@@ -12,7 +12,7 @@
     <link href="bootstrap/css/offcanvas.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="bootstrap/css/docs.css">
 	<link rel="stylesheet" type="text/css" href="bootstrap/css/pygments-manni.css">
-     <meta name="description" content="algoritmo de detección armónica Web Audio API. Javascript">
+     <meta name="description" content="Algoritmo de detección armónica Web Audio API. Javascript">
      <meta name="author" content="Luis Javier Gil Bobillo">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
 <link rel="icon" href="images/favicon.ico" type="image/x-icon">
@@ -45,38 +45,41 @@
 button sup { font-size:9px;}
  #provisional{ position:absolute; color:#FFF}
 </style>
-<script type="text/javascript"  src="notas.js"></script>
+
 <script type="text/javascript" src="comunes.js"></script>
+<script type="text/javascript"  src="notas.js"></script>
 <script>
 var intervalosnota;
 //------Si USAMOS  MICrófono
 
 function sonidoDirecto() {
-	if(suena)
-	playPause();
-	
-	
-	if (pausa){
-			if(!suena && pausa){
-				//Vengo del silencio-> borro texto en marco
-	   			var parrafo = document.getElementById("provisional");
-      			 parrafo.parentNode.removeChild(parrafo);
-				}
-		
-		 //Cambiar estadomic
-		 textoPausaMic();
-		 tomarEntradaMic({audio:true}, al_aire);
-	    pausa= false;
-		}else{
+    if (suena)
+        playPause();
 
-		miFuente.disconnect();
-		//Estado del botón de entrada de mic
-	   textoPlayMic();
-	   //Vengo del silencio-> borro texto en marco
-	   pulsaElBotonReproducir();
-	   pausa=true;
-	   //tomarEntradaMic({audio:true}, al_aire);
-		}
+
+    if (pausa) {
+        if (!suena && pausa) {
+            //Vengo del silencio-> borro texto en marco
+            var parrafo = document.getElementById("provisional");
+            parrafo.parentNode.removeChild(parrafo);
+        }
+
+        //Cambiar estadomic
+        textoPausaMic();
+        tomarEntradaMic({
+            audio: true
+        }, al_aire);
+        pausa = false;
+    } else {
+
+        miFuente.disconnect();
+        //Estado del botón de entrada de mic
+        textoPlayMic();
+        //Vengo del silencio-> borro texto en marco
+        pulsaElBotonReproducir();
+        pausa = true;
+        //tomarEntradaMic({audio:true}, al_aire);
+    }
 }
 
 
@@ -86,10 +89,10 @@ function error() {
 
 function tomarEntradaMic(medio, llamada) {
     try {
-		navigator.getUserMedia = 
-        	navigator.getUserMedia ||
-        	navigator.webkitGetUserMedia ||
-        	navigator.mozGetUserMedia;
+        navigator.getUserMedia =
+            navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia;
         navigator.getUserMedia(medio, llamada, error);
     } catch (e) {
         alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
@@ -103,184 +106,187 @@ function al_aire(entrada) {
     contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
     contextoDeAudio.analizador.fftSize = 2048;
     //cadenaDeAudio(fuente);
-	fuente.connect(contextoDeAudio.analizador);
+    fuente.connect(contextoDeAudio.analizador);
     requestAnimationFrame(dibujaEspectro.bind(this));
-	miFuente = fuente;
+    miFuente = fuente;
 
-	
+
 }
 
 //establecemos la cadena de audio 
 
 function cadenaDeAudio(fuente) {
-	contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
+    contextoDeAudio.analizador = contextoDeAudio.createAnalyser();
     //Analizador
     contextoDeAudio.analizador.smoothingTimeConstant = 0.8;
     contextoDeAudio.analizador.fftSize = 2048;
     contextoDeAudio.analizador.minDecibels = -120;
     contextoDeAudio.analizador.maxDecibels = 0;
-	
-    if (esFirefox) { contextoDeAudio.volumen = contextoDeAudio.createGain();}else{
-    contextoDeAudio.volumen = contextoDeAudio.createGainNode();}
-    
+
+    if (esFirefox) {
+        contextoDeAudio.volumen = contextoDeAudio.createGain();
+    } else {
+        contextoDeAudio.volumen = contextoDeAudio.createGainNode();
+    }
+
     // Ruta de audio conexiones
     fuente.connect(contextoDeAudio.volumen);
     contextoDeAudio.volumen.connect(contextoDeAudio.analizador);
-	contextoDeAudio.volumen.connect(contextoDeAudio.destination);
+    contextoDeAudio.volumen.connect(contextoDeAudio.destination);
     return fuente;
 }
 
 function dibujaEspectro() {
-	//Función de dibujo y análisis.
-	//FRECUENCIA: Tomamos un byte de enteros, array de 256 valores de amplitud y 1028 muestras
-    var ByteDatosFrec = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
-    contextoDeAudio.analizador.getByteFrequencyData(ByteDatosFrec);
-	
-	//llamamos a las funciones de dibujo (Canvas de resolución y forma de onda)
-	dibujarEspectroDeResolucion(ByteDatosFrec);
-	dibujarOnda();
+        //Función de dibujo y análisis.
+        //FRECUENCIA: Tomamos un byte de enteros, array de 256 valores de amplitud y 1028 muestras
+        var ByteDatosFrec = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+        contextoDeAudio.analizador.getByteFrequencyData(ByteDatosFrec);
 
-	//Canvas principal
-	var canvas = document.getElementById('principal');
-    var ctx = canvas.getContext('2d');
-    ANCHO = document.getElementById('pantalla').offsetWidth -80;
-    ALTO = 256;
-    canvas.width = ANCHO;
-    canvas.height = ALTO;
-    var bar_width = 1;
-    ctx.clearRect(0, 0, ANCHO, ALTO);
-    //dibujo línea comparador
-    dibujarlineacomparador(ctx, 0, ANCHO, 128);
-    dibujarescala(ctx, ALTO, ANCHO);
-    //---- VISUALIZAMOS ALGUNAS VARIABLES
-    //console.log(ByteDatosFrec);
-    var nyquist = contextoDeAudio.sampleRate / 2;
-    //console.log(nyquist);
-    (document.querySelector(".nyquist")).innerHTML = nyquist;
-    (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
-    (document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
-    (document.querySelector(".fftsize")).innerHTML = contextoDeAudio.analizador.fftSize;
-    //--------------
-    var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
-    var maximo = ByteDatosFrec[0];
-    var pico = ByteDatosFrec[0];
-    var valores = new Array();
-    var posiciones = new Array();
-    var valorespico = new Array();
-    var posicionespico = new Array();
-    //var posicionesordenadas = new Array();
-    //var valoresordenados = new Array();
-    //for (var i = 0; i < NumerodeBarras; i++) {
-    //calculo directo del máximo	
-    /*
+        //llamamos a las funciones de dibujo (Canvas de resolución y forma de onda)
+        dibujarEspectroDeResolucion(ByteDatosFrec);
+        dibujarOnda();
+
+        //Canvas principal
+        var canvas = document.getElementById('principal');
+        var ctx = canvas.getContext('2d');
+        ANCHO = document.getElementById('pantalla').offsetWidth - 80;
+        ALTO = 256;
+        canvas.width = ANCHO;
+        canvas.height = ALTO;
+        var bar_width = 1;
+        ctx.clearRect(0, 0, ANCHO, ALTO);
+        //dibujo línea comparador
+        dibujarlineacomparador(ctx, 0, ANCHO, 128);
+        dibujarescala(ctx, ALTO, ANCHO);
+        //---- VISUALIZAMOS ALGUNAS VARIABLES
+        //console.log(ByteDatosFrec);
+        var nyquist = contextoDeAudio.sampleRate / 2;
+        //console.log(nyquist);
+        (document.querySelector(".nyquist")).innerHTML = nyquist;
+        (document.querySelector(".arrayFreq")).innerHTML = ByteDatosFrec.length;
+        (document.querySelector(".muestreo")).innerHTML = contextoDeAudio.sampleRate;
+        (document.querySelector(".fftsize")).innerHTML = contextoDeAudio.analizador.fftSize;
+        //--------------
+        var NumerodeBarras = Math.round(ANCHO / ByteDatosFrec.length);
+        var maximo = ByteDatosFrec[0];
+        var pico = ByteDatosFrec[0];
+        var valores = new Array();
+        var posiciones = new Array();
+        var valorespico = new Array();
+        var posicionespico = new Array();
+        //var posicionesordenadas = new Array();
+        //var valoresordenados = new Array();
+        //for (var i = 0; i < NumerodeBarras; i++) {
+        //calculo directo del máximo	
+        /*
 			var losmayores = new Array();
 			losmayores = Math.max.apply( Math, ByteDatosFrec );
 			console.log(
 			losmayores
 			)	
 			*/
-    //Comparo valores mayores que el umbral
-    for (var m = 0; m <= (ByteDatosFrec.length); m++) {
-        var magnitud = ByteDatosFrec[m];
-        var siguiente = ByteDatosFrec[m + 1];
-        var anterior = ByteDatosFrec[m - 1];
-        //variables dibujo
-        var porcentaje = magnitud / 256;
-        var altobarra = ALTO * porcentaje;
-        var margen = ALTO - altobarra - 1;
-        if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
-            
-			 pico = magnitud;
-            //Creamos nuestra matriz de valores y posiciones
-			 valores.push(pico);
-            posiciones.push(m);
-            //Color blanco a los picos
-			 ctx.fillStyle = "rgb(225,225,225)";
-            ctx.fillRect(m, margen, bar_width, altobarra);
-            var pos = m;
-            var frecuencia = ((pos * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
-        } else {
-			
-			 //color oscuro al resto
-            ctx.fillStyle = "rgb(112,96,94)"
-            ctx.fillRect(m, margen, bar_width, altobarra);
-        }
-        //termina para los mayores de 100
-        // Ajustar valores en el canvas
-/*var porcentaje = valor / 256;
+        //Comparo valores mayores que el umbral
+        for (var m = 0; m <= (ByteDatosFrec.length); m++) {
+            var magnitud = ByteDatosFrec[m];
+            var siguiente = ByteDatosFrec[m + 1];
+            var anterior = ByteDatosFrec[m - 1];
+            //variables dibujo
+            var porcentaje = magnitud / 256;
+            var altobarra = ALTO * porcentaje;
+            var margen = ALTO - altobarra - 1;
+            if ((magnitud > maximo) && (magnitud > siguiente) && (magnitud > anterior) && (magnitud > 128)) {
+
+                pico = magnitud;
+                //Creamos nuestra matriz de valores y posiciones
+                valores.push(pico);
+                posiciones.push(m);
+                //Color blanco a los picos
+                ctx.fillStyle = "rgb(225,225,225)";
+                ctx.fillRect(m, margen, bar_width, altobarra);
+                var pos = m;
+                var frecuencia = ((pos * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
+            } else {
+
+                //color oscuro al resto
+                ctx.fillStyle = "rgb(112,96,94)"
+                ctx.fillRect(m, margen, bar_width, altobarra);
+            }
+            //termina para los mayores de 100
+            // Ajustar valores en el canvas
+            /*var porcentaje = valor / 256;
 				var altobarra = ALTO * porcentaje;
 				var margen = ALTO - altobarra -1;
 				*/
-				//Mostramos en pantalla
-        (document.querySelector(".valor")).innerHTML = pico;
-        (document.querySelector(".picos")).innerHTML = valores.slice(0, 8);
-        (document.querySelector(".posicion")).innerHTML = posiciones.slice(0, 10);
-        (document.querySelector(".frecuencia")).innerHTML = frecuencia;
-        //CORRESPONDENCIA DE NOTAS     
-       
-	   	 if (contextoDeAudio.sampleRate=='48000' && sw==0 ){
-			alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
-			sw=1;
-			}
+            //Mostramos en pantalla
+            (document.querySelector(".valor")).innerHTML = pico;
+            (document.querySelector(".picos")).innerHTML = valores.slice(0, 8);
+            (document.querySelector(".posicion")).innerHTML = posiciones.slice(0, 10);
+            (document.querySelector(".frecuencia")).innerHTML = frecuencia;
+            //CORRESPONDENCIA DE NOTAS     
 
-        //Compruebo cuando he completado un ciclo de muestras 
-        if (m == ByteDatosFrec.length) {
-			//Si tengo valores marco la casilla de detección
-			 if(valores[0] != null){
-				 $('.db').css('background-color', '#5cb85c');
-				 $('.ojo').removeClass('glyphicon-eye-close');
-				 $('.ojo').addClass('glyphicon-eye-open');
-				 $('.ojo').css('color','white');
-				 }else{
-				 $('.db').css('background-color', '#f9f9f9');
-				 $('.ojo').removeClass('glyphicon-eye-open');
-				 $('.ojo').addClass('glyphicon-eye-close');
-				 $('.ojo').css('color','rgb(51, 51, 51)');
-				 }
-            //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
-            var valoresordenados = new Array();
-            var posicionesordenadas = new Array();
-            var frecuenciasordenadas = new Array();
-            var objeto = new Array();
-            for (i = 0; i <= valores.length; i++) {
-                objeto[i] = new Array(2);
-                objeto[i][0] = valores[i];
-                objeto[i][1] = posiciones[i];
+            if (contextoDeAudio.sampleRate == '48000' && sw == 0) {
+                alert('La frecuencia de muestreo de su dispositivo de salida es de 48.000Hz. La aplicación funciona con el estandar de 44100Hz. Si tu S.O. es Mac, puedes cambiarla fácilmente en Utilidades-> Configuración de Audio y MIDI')
+                sw = 1;
             }
-            objeto.sort(function(a, b) {
-                return b[0] - a[0];
-            });
-            for (i = 0; i < posiciones.length; i++) {
-                valoresordenados[i] = objeto[i][0];
-                posicionesordenadas[i] = objeto[i][1];
-                frecuenciasordenadas[i] = parseInt((posicionesordenadas[i] * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
-            }(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0, 10);
-            (document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0, 8);
-            //console.log(posicionesordenadas);
-            if (posiciones.length == 0) {
-                borra();
-            }
-            //console.log('posiciones: '+posiciones)
-            //console.log('valores: '+valores)
-            (document.querySelector(".nota")).innerHTML = '--';
-            if (posiciones) {
-                (document.querySelector(".nota")).innerHTML = '?';
-                marca(posiciones);
-                //borra();
-                //comprobar todas las notas
-                //Notas--------
-                //comprobar todas las notas
-                comprobaciones(posiciones);
-            }
-        }
-    } // fin bucle para valores mayores que el umbral
-requestAnimationFrame(dibujaEspectro.bind(this))
 
-} // fin dibujar espectro canvas principal y análisis
+            //Compruebo cuando he completado un ciclo de muestras 
+            if (m == ByteDatosFrec.length) {
+                //Si tengo valores marco la casilla de detección
+                if (valores[0] != null) {
+                    $('.db').css('background-color', '#5cb85c');
+                    $('.ojo').removeClass('glyphicon-eye-close');
+                    $('.ojo').addClass('glyphicon-eye-open');
+                    $('.ojo').css('color', 'white');
+                } else {
+                    $('.db').css('background-color', '#f9f9f9');
+                    $('.ojo').removeClass('glyphicon-eye-open');
+                    $('.ojo').addClass('glyphicon-eye-close');
+                    $('.ojo').css('color', 'rgb(51, 51, 51)');
+                }
+                //---- ordeno los armónicos de mayor nivel, para optimizar el comparador
+                var valoresordenados = new Array();
+                var posicionesordenadas = new Array();
+                var frecuenciasordenadas = new Array();
+                var objeto = new Array();
+                for (i = 0; i <= valores.length; i++) {
+                    objeto[i] = new Array(2);
+                    objeto[i][0] = valores[i];
+                    objeto[i][1] = posiciones[i];
+                }
+                objeto.sort(function(a, b) {
+                    return b[0] - a[0];
+                });
+                for (i = 0; i < posiciones.length; i++) {
+                    valoresordenados[i] = objeto[i][0];
+                    posicionesordenadas[i] = objeto[i][1];
+                    frecuenciasordenadas[i] = parseInt((posicionesordenadas[i] * contextoDeAudio.sampleRate) / contextoDeAudio.analizador.fftSize);
+                }(document.querySelector(".posicionord")).innerHTML = posicionesordenadas.slice(0, 10);
+                (document.querySelector(".frecuenciasordenadas")).innerHTML = frecuenciasordenadas.slice(0, 8);
+                //console.log(posicionesordenadas);
+                if (posiciones.length == 0) {
+                    borra();
+                }
+                //console.log('posiciones: '+posiciones)
+                //console.log('valores: '+valores)
+                (document.querySelector(".nota")).innerHTML = '--';
+                if (posiciones) {
+                    (document.querySelector(".nota")).innerHTML = '?';
+                    marca(posiciones);
+                    //borra();
+                    //comprobar todas las notas
+                    //Notas--------
+                    //comprobar todas las notas
+                    comprobaciones(posiciones);
+                }
+            }
+        } // fin bucle para valores mayores que el umbral
+        requestAnimationFrame(dibujaEspectro.bind(this))
+
+    } // fin dibujar espectro canvas principal y análisis
 
 
 function dibujarEspectroDeResolucion(ByteDatosFrec) {
-	//Canvas de resolución//dibujamos el espectro de **resolución**
+    //Canvas de resolución//dibujamos el espectro de **resolución**
     var espectro = document.querySelector('#canvasresolucion');
     var ctxe = espectro.getContext('2d');
     var ancho = document.getElementById('marco').offsetWidth - 80;
@@ -290,67 +296,67 @@ function dibujarEspectroDeResolucion(ByteDatosFrec) {
     var ancho_barra;
     var resolucion = 18;
     ctxe.clearRect(0, 0, ancho, alto);
-	
-		//Dibujamos el espectro de resolución
-		var NumerodeBarras = Math.round(ancho / resolucion);
-		//dibujamos las barras
-		for (var i = 0; i < NumerodeBarras; i++) {
-			//for (var i = 0; i < (datos_frecuencia.length); i++) {
-			var magnitud = ByteDatosFrec[i];
-			// ajustamos las variables para dibujarlas en el canvas
-			//dibujamos tipo hue ;)
-			var hue = i / ByteDatosFrec.length * 360
-			ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
-			ctxe.fillRect(resolucion * i, alto - 20, resolucion - 2, -magnitud + 40);
-			ctxe.fillStyle = "rgb(225,225,225)";
-			ctxe.font = "8pt Helvetica";
-			ctxe.fillText(i, resolucion * i, alto);
-			if (i == 8) {
-				ctxe.fillText('Mi', resolucion * i, 10);
-			}
-			if (i == 15) {
-				ctxe.fillText('Mi', resolucion * i, 10);
-			}
-			if (i == 31) {
-				ctxe.fillText('Mi', resolucion * i, 10);
-			}
-		}
-	
-	
-	}
+
+    //Dibujamos el espectro de resolución
+    var NumerodeBarras = Math.round(ancho / resolucion);
+    //dibujamos las barras
+    for (var i = 0; i < NumerodeBarras; i++) {
+        //for (var i = 0; i < (datos_frecuencia.length); i++) {
+        var magnitud = ByteDatosFrec[i];
+        // ajustamos las variables para dibujarlas en el canvas
+        //dibujamos tipo hue ;)
+        var hue = i / ByteDatosFrec.length * 360
+        ctxe.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+        ctxe.fillRect(resolucion * i, alto - 20, resolucion - 2, -magnitud + 40);
+        ctxe.fillStyle = "rgb(225,225,225)";
+        ctxe.font = "8pt Helvetica";
+        ctxe.fillText(i, resolucion * i, alto);
+        if (i == 8) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+        if (i == 15) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+        if (i == 31) {
+            ctxe.fillText('Mi', resolucion * i, 10);
+        }
+    }
+
+
+}
 
 
 //Dibujar forma de onda en la línea de tiempo
-function dibujarOnda(tiempos){
-//TIEMPO: creamos un array de bytes para dibujar la forma de onda:
-	var tiempos = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
-    contextoDeAudio.analizador.getByteTimeDomainData(tiempos);	
-	var marcotiempo = document.querySelector('#canvasonda');
+function dibujarOnda(tiempos) {
+    //TIEMPO: creamos un array de bytes para dibujar la forma de onda:
+    var tiempos = new Uint8Array(contextoDeAudio.analizador.frequencyBinCount);
+    contextoDeAudio.analizador.getByteTimeDomainData(tiempos);
+    var marcotiempo = document.querySelector('#canvasonda');
     var ctxo = marcotiempo.getContext('2d');
     var ancho = document.getElementById('marcoonda').offsetWidth - 80;
     marcotiempo.width = ancho;
     marcotiempo.height = 200;
     ctxo.fillStyle = 'white';
-	ctxo.moveTo(0, 128);
-        ctxo.lineTo(ancho, 128);
-        ctxo.stroke();
-        ctxo.fillText('0', 5, 128)
-	
-// Dibujamdo el Gráfico en el dominio del tiempo.
-  for (var i = 0; i < contextoDeAudio.analizador.frequencyBinCount; i++) {
-    var valor = tiempos[i];
-    var porcentaje = valor / 256;
-    var amplitud = 256 * porcentaje;
-    var ajuste = 256 - amplitud - 1;
-    var anchopixel = ancho/contextoDeAudio.analizador.frequencyBinCount;
-    ctxo.fillStyle = 'white';
-    ctxo.fillRect(i * anchopixel, ajuste, 1, 2);
-	
-  }	
-	
-	
-	
-	
+    ctxo.moveTo(0, 128);
+    ctxo.lineTo(ancho, 128);
+    ctxo.stroke();
+    ctxo.fillText('0', 5, 128)
+
+    // Dibujamdo el Gráfico en el dominio del tiempo.
+    for (var i = 0; i < contextoDeAudio.analizador.frequencyBinCount; i++) {
+        var valor = tiempos[i];
+        var porcentaje = valor / 256;
+        var amplitud = 256 * porcentaje;
+        var ajuste = 256 - amplitud - 1;
+        var anchopixel = ancho / contextoDeAudio.analizador.frequencyBinCount;
+        ctxo.fillStyle = 'white';
+        ctxo.fillRect(i * anchopixel, ajuste, 1, 2);
+
+    }
+
+
+
+
 }
 
 
@@ -387,25 +393,25 @@ function marca(posiciones) {
 }
 
 function borra() {
-    $("*").removeClass('success');
-    $("*").removeClass('nota_aprox');
-    $("*").removeClass('warning');
-    $("*").removeClass('warning1');
-    $("*").removeClass('nota_alta');
-    $("*").removeClass('nota_baja');
-}
-//}
-// línea comparador---------
+        $("*").removeClass('success');
+        $("*").removeClass('nota_aprox');
+        $("*").removeClass('warning');
+        $("*").removeClass('warning1');
+        $("*").removeClass('nota_alta');
+        $("*").removeClass('nota_baja');
+    }
+    //}
+    // línea comparador---------
 
 function dibujarlineacomparador(c, x1, x2, y) {
-    c.lineWidth = 1;
-    var adaptedY = Math.floor(y) + 0.5;
-    c.beginPath();
-    c.moveTo(x1, 128);
-    c.lineTo(x2, 128);
-    c.stroke();
-}
-//Escala 256 valores
+        c.lineWidth = 1;
+        var adaptedY = Math.floor(y) + 0.5;
+        c.beginPath();
+        c.moveTo(x1, 128);
+        c.lineTo(x2, 128);
+        c.stroke();
+    }
+    //Escala 256 valores
 
 function dibujarescala(c, ALTO, ANCHO) {
     c.font = "8pt Helvetica";
@@ -431,32 +437,32 @@ function potenciometro(slider) {
             contextoDeAudio.volume.gain.value = volume;
         }
     }
-} 
+}
 
- function textoPlayMic(){
-		 
-		 var texto = $('#microfono');
-            var icono = texto.find('span'); 
-            texto.html('Usar micrófono&nbsp;');
-            texto.append(icono);
-		 $('#microfono').removeClass('btn-warning');
-		 $('#microfono').addClass('btn-success');
-		 $('#iconom').removeClass('glyphicon glyphicon-pause');
-		 $('#iconom').addClass('glyphicon glyphicon-user');
-		 
-		
- }
- 
- function textoPausaMic(){
-	 
-	 var texto = $('#microfono');
-            var icono = texto.find('span'); 
-            texto.html('Pausar micrófono&nbsp;');
-            texto.append(icono);
-		 $('#microfono').removeClass('btn-success');
-		 $('#microfono').addClass('btn-warning');
-		 $('#iconom').removeClass('glyphicon glyphicon-user');
-		 $('#iconom').addClass('glyphicon glyphicon-pause');
+function textoPlayMic() {
+
+    var texto = $('#microfono');
+    var icono = texto.find('span');
+    texto.html('Usar micrófono&nbsp;');
+    texto.append(icono);
+    $('#microfono').removeClass('btn-warning');
+    $('#microfono').addClass('btn-success');
+    $('#iconom').removeClass('glyphicon glyphicon-pause');
+    $('#iconom').addClass('glyphicon glyphicon-user');
+
+
+}
+
+function textoPausaMic() {
+
+    var texto = $('#microfono');
+    var icono = texto.find('span');
+    texto.html('Pausar micrófono&nbsp;');
+    texto.append(icono);
+    $('#microfono').removeClass('btn-success');
+    $('#microfono').addClass('btn-warning');
+    $('#iconom').removeClass('glyphicon glyphicon-user');
+    $('#iconom').addClass('glyphicon glyphicon-pause');
 }
 </script>
 
