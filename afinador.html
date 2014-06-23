@@ -46,7 +46,7 @@
 
         function init() {
             if('webkitAudioContext' in window) {
-               contextoDeAudio = new webkitAudioContext();
+               contextoDeAudio = new AudioContext();
             }
         }
 
@@ -58,23 +58,22 @@
     //------USAMOS  MICrófono
     function sonidoDirecto() {
         
-        getUserMedia({audio:true}, reproducirMic);
+        tomarEntradaMic({audio:true}, reproducirMic);
     }
     function error() {
         alert('Ha fallado la captura de audio...');
     }
-    function getUserMedia(tipo, llamada) {
-      try {
-		navigator.getMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-
-        navigator.getMedia(dictionary, callback, error);
-        } catch (e) {
-            alert('webkitGetUserMedia excepción :' + e);
-        }
-    }     
+   function tomarEntradaMic(medio, llamada) {
+    try {
+        navigator.getUserMedia =
+            navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia;
+        navigator.getUserMedia(medio, llamada, error);
+    } catch (e) {
+        alert('Nos aprarece algún error en la toma de entrada de micrófono... :' + e);
+    }
+}
 
     //play desde micro
     function reproducirMic(stream) {
